@@ -9,11 +9,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:ghost_song_player/main.dart';
+import 'package:ghost_song_player/services/audio_service.dart';
 
 void main() {
   testWidgets('Counter increments smoke test', (WidgetTester tester) async {
+     final audioService = AudioService();
     // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+    await tester.pumpWidget( GhostPlayerApp(audioService: audioService,));
 
     // Verify that our counter starts at 0.
     expect(find.text('0'), findsOneWidget);

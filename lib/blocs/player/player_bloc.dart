@@ -60,17 +60,44 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
     LoadPlaylist event,
     Emitter<PlayerState> emit,
   ) async {
-    emit(
-      state.copyWith(
-        playlist: event.songs,
-        status: event.songs.isEmpty ? PlayerStatus.initial : PlayerStatus.ready,
-        clearError: true,
-      ),
-    );
+    try {
+      emit(
+        state.copyWith(
+          playlist: event.songs,
+          status: event.songs.isEmpty
+              ? PlayerStatus.initial
+              : PlayerStatus.loading,
+          clearError: true,
+        ),
+      );
+
+      if (event.songs.isEmpty) {
+        return;
+      }
+
+      await _audioService.setPlaylist(event.songs);
+
+      emit(state.copyWith(status: PlayerStatus.ready));
+    } catch (error) {
+      emit(
+        state.copyWith(
+          status: PlayerStatus.error,
+          errorMessage: error.toString(),
+        ),
+      );
+    }
   }
 
   Future<void> _onPlaySong(PlaySong event, Emitter<PlayerState> emit) async {
     try {
+      final index = state.playlist.indexWhere(
+        (song) => song.id == event.song.id,
+      );
+
+      if (index == -1) {
+        return;
+      }
+
       emit(
         state.copyWith(
           status: PlayerStatus.loading,
@@ -81,10 +108,7 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
         ),
       );
 
-      await _audioService.setSong(event.song);
-      await _audioService.play();
-
-      emit(state.copyWith(currentSong: event.song));
+      await _audioService.playSongAt(index);
     } catch (error) {
       emit(
         state.copyWith(
@@ -139,15 +163,28 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
       return;
     }
 
-    final currentIndex = state.currentSong == null
-        ? -1
-        : state.playlist.indexWhere((song) => song.id == state.currentSong!.id);
+    try {
+      emit(state.copyWith(status: PlayerStatus.loading, clearError: true));
 
-    final nextIndex = currentIndex < 0
-        ? 0
-        : (currentIndex + 1) % state.playlist.length;
+      await _audioService.next();
 
-    add(PlaySong(state.playlist[nextIndex]));
+      final index = _audioService.currentIndex;
+
+      if (index == null || index < 0 || index >= state.playlist.length) {
+        return;
+      }
+
+      final song = state.playlist[index];
+
+      emit(state.copyWith(currentSong: song, position: Duration.zero));
+    } catch (error) {
+      emit(
+        state.copyWith(
+          status: PlayerStatus.error,
+          errorMessage: error.toString(),
+        ),
+      );
+    }
   }
 
   Future<void> _onPreviousSong(
@@ -158,15 +195,28 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
       return;
     }
 
-    final currentIndex = state.currentSong == null
-        ? 0
-        : state.playlist.indexWhere((song) => song.id == state.currentSong!.id);
+    try {
+      emit(state.copyWith(status: PlayerStatus.loading, clearError: true));
 
-    final previousIndex = currentIndex <= 0
-        ? state.playlist.length - 1
-        : currentIndex - 1;
+      await _audioService.previous();
 
-    add(PlaySong(state.playlist[previousIndex]));
+      final index = _audioService.currentIndex;
+
+      if (index == null || index < 0 || index >= state.playlist.length) {
+        return;
+      }
+
+      final song = state.playlist[index];
+
+      emit(state.copyWith(currentSong: song, position: Duration.zero));
+    } catch (error) {
+      emit(
+        state.copyWith(
+          status: PlayerStatus.error,
+          errorMessage: error.toString(),
+        ),
+      );
+    }
   }
 
   Future<void> _onSeekSong(SeekSong event, Emitter<PlayerState> emit) async {

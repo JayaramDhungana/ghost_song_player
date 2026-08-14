@@ -5,21 +5,93 @@ import '../models/song.dart';
 class AudioService {
   final AudioPlayer _player = AudioPlayer();
 
+  List<Song> _playlist = [];
+
   Stream<Duration> get positionStream => _player.positionStream;
 
   Stream<Duration?> get durationStream => _player.durationStream;
 
   Stream<PlayerState> get playerStateStream => _player.playerStateStream;
 
+  Stream<int?> get currentIndexStream => _player.currentIndexStream;
+
   bool get isPlaying => _player.playing;
 
-  Future<void> setSong(Song song) async {
-    if (song.audioUrl.startsWith('asset://')) {
-      final assetPath = song.audioUrl.replaceFirst('asset://', '');
+  int? get currentIndex => _player.currentIndex;
 
-      await _player.setAsset(assetPath);
+ Future<void> setPlaylist(List<Song> songs) async {
+  _playlist = List.unmodifiable(songs);
+
+  if (_playlist.isEmpty) {
+    await _player.stop();
+    return;
+  }
+
+  final sources = _playlist.map(
+    (song) {
+      final assetPath = song.audioUrl.replaceFirst(
+        'asset://',
+        '',
+      );
+
+      return AudioSource.asset(
+        assetPath,
+        tag: song.id,
+      );
+    },
+  ).toList();
+
+  await _player.setAudioSources(
+    sources,
+    initialIndex: 0,
+    initialPosition: Duration.zero,
+  );
+}
+
+  Future<void> playSongAt(int index) async {
+    if (index < 0 || index >= _playlist.length) {
+      return;
+    }
+
+    await _player.seek(
+      Duration.zero,
+      index: index,
+    );
+
+    await _player.play();
+  }
+
+  Future<void> next() async {
+    if (_playlist.isEmpty) {
+      return;
+    }
+
+    if (_player.hasNext) {
+      await _player.seekToNext();
+      await _player.play();
     } else {
-      await _player.setUrl(song.audioUrl);
+      await _player.seek(
+        Duration.zero,
+        index: 0,
+      );
+      await _player.play();
+    }
+  }
+
+  Future<void> previous() async {
+    if (_playlist.isEmpty) {
+      return;
+    }
+
+    if (_player.hasPrevious) {
+      await _player.seekToPrevious();
+      await _player.play();
+    } else {
+      await _player.seek(
+        Duration.zero,
+        index: _playlist.length - 1,
+      );
+      await _player.play();
     }
   }
 

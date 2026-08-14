@@ -29,7 +29,23 @@ class _PlayerViewState extends State<PlayerView> {
           id: 'basyo-maya',
           title: 'BASYO MAYA',
           artist: 'Local',
-          audioUrl: 'asset://assets/audio/BASYO_MAYA(128k).mp3',
+          audioUrl: 'asset://audio/BASYO_MAYA(128k).mp3',
+          folder: 'Nepali',
+        ),
+
+        Song(
+          id: 'song-two',
+          title: 'Gauri',
+          artist: 'Local',
+          audioUrl: 'asset://audio/Gauri.mp3',
+          folder: 'Nepali',
+        ),
+
+        Song(
+          id: 'song-three',
+          title: 'Nuwakote Yo Jhilke Keto',
+          artist: 'Local',
+          audioUrl: 'asset://audio/nuwakote_yo_jhilke.mp3',
           folder: 'Nepali',
         ),
       ],
@@ -83,20 +99,32 @@ class _PlayerViewState extends State<PlayerView> {
                             title: Text(song.title),
                             subtitle: Text(song.artist ?? 'Unknown Artist'),
                             trailing: IconButton(
-                              icon: Icon(
-                                isCurrentSong && state.isPlaying
-                                    ? Icons.pause
-                                    : Icons.play_arrow,
-                              ),
-                              onPressed: () {
-                                final bloc = context.read<PlayerBloc>();
+                              onPressed: state.status == PlayerStatus.loading
+                                  ? null
+                                  : () {
+                                      final bloc = context.read<PlayerBloc>();
 
-                                if (isCurrentSong) {
-                                  bloc.add(const TogglePlayPause());
-                                } else {
-                                  bloc.add(PlaySong(song));
-                                }
-                              },
+                                      if (isCurrentSong) {
+                                        bloc.add(const TogglePlayPause());
+                                      } else {
+                                        bloc.add(PlaySong(song));
+                                      }
+                                    },
+                              icon:
+                                  state.status == PlayerStatus.loading &&
+                                      isCurrentSong
+                                  ? const SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                      ),
+                                    )
+                                  : Icon(
+                                      isCurrentSong && state.isPlaying
+                                          ? Icons.pause
+                                          : Icons.play_arrow,
+                                    ),
                             ),
                             onTap: () {
                               context.read<PlayerBloc>().add(PlaySong(song));
@@ -128,6 +156,13 @@ class _NowPlaying extends StatelessWidget {
 
   const _NowPlaying({required this.song, required this.state});
 
+  String _formatDuration(Duration duration) {
+    final minutes = duration.inMinutes;
+    final seconds = duration.inSeconds % 60;
+
+    return '$minutes:${seconds.toString().padLeft(2, '0')}';
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -153,26 +188,41 @@ class _NowPlaying extends StatelessWidget {
 
           const SizedBox(height: 10),
 
-          Slider(
-            min: 0,
-            max: state.duration.inMilliseconds > 0
-                ? state.duration.inMilliseconds.toDouble()
-                : 1,
-            value: state.position.inMilliseconds
-                .clamp(
-                  0,
-                  state.duration.inMilliseconds > 0
-                      ? state.duration.inMilliseconds
-                      : 1,
-                )
-                .toDouble(),
-            onChanged: state.duration == Duration.zero
-                ? null
-                : (value) {
-                    context.read<PlayerBloc>().add(
-                      SeekSong(Duration(milliseconds: value.toInt())),
-                    );
-                  },
+          Column(
+            children: [
+              Slider(
+                min: 0,
+                max: state.duration.inMilliseconds > 0
+                    ? state.duration.inMilliseconds.toDouble()
+                    : 1,
+                value: state.position.inMilliseconds
+                    .clamp(
+                      0,
+                      state.duration.inMilliseconds > 0
+                          ? state.duration.inMilliseconds
+                          : 1,
+                    )
+                    .toDouble(),
+                onChanged: state.duration == Duration.zero
+                    ? null
+                    : (value) {
+                        context.read<PlayerBloc>().add(
+                          SeekSong(Duration(milliseconds: value.toInt())),
+                        );
+                      },
+              ),
+
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(_formatDuration(state.position)),
+                    Text(_formatDuration(state.duration)),
+                  ],
+                ),
+              ),
+            ],
           ),
 
           Row(
@@ -190,16 +240,23 @@ class _NowPlaying extends StatelessWidget {
 
               IconButton(
                 iconSize: 52,
-                onPressed: () {
-                  context.read<PlayerBloc>().add(const TogglePlayPause());
-                },
-                icon: Icon(
-                  state.isPlaying
-                      ? Icons.pause_circle_filled
-                      : Icons.play_circle_filled,
-                ),
+                onPressed: state.status == PlayerStatus.loading
+                    ? null
+                    : () {
+                        context.read<PlayerBloc>().add(const TogglePlayPause());
+                      },
+                icon: state.status == PlayerStatus.loading
+                    ? const SizedBox(
+                        width: 40,
+                        height: 40,
+                        child: CircularProgressIndicator(strokeWidth: 3),
+                      )
+                    : Icon(
+                        state.isPlaying
+                            ? Icons.pause_circle_filled
+                            : Icons.play_circle_filled,
+                      ),
               ),
-
               const SizedBox(width: 20),
 
               IconButton(
