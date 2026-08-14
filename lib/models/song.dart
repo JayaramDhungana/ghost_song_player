@@ -32,4 +32,26 @@ class Song {
       folder: folder ?? this.folder,
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'title': title,
+      'artist': artist,
+      'audioUrl': audioUrl,
+      'coverUrl': coverUrl,
+      'folder': folder,
+    };
+  }
+
+  factory Song.fromJson(Map<String, dynamic> json) {
+    return Song(
+      id: json['id'] as String,
+      title: json['title'] as String,
+      artist: json['artist'] as String?,
+      audioUrl: json['audioUrl'] as String,
+      coverUrl: json['coverUrl'] as String?,
+      folder: json['folder'] as String,
+    );
+  }
 }

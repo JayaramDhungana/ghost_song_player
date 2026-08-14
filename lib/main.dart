@@ -2,46 +2,44 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
+import 'blocs/player/player_bloc.dart';
+import 'services/audio_service.dart';
+import 'views/player_view.dart';
+
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  runApp(const GhostPlayerApp());
+
+  final audioService = AudioService();
+
+  runApp(GhostPlayerApp(audioService: audioService));
 }
 
 class GhostPlayerApp extends StatelessWidget {
-  const GhostPlayerApp({super.key});
+  final AudioService audioService;
+
+  const GhostPlayerApp({super.key, required this.audioService});
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp.router(
-      title: 'GhostPlayer',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        brightness: Brightness.dark,
-        useMaterial3: true,
+    return BlocProvider(
+      create: (_) => PlayerBloc(audioService: audioService),
+      child: MaterialApp.router(
+        title: 'GhostPlayer',
+        debugShowCheckedModeBanner: false,
+        theme: ThemeData(brightness: Brightness.dark, useMaterial3: true),
+        routerConfig: _router,
       ),
-      routerConfig: _router,
     );
   }
 }
 
-/// Application routes.
 final GoRouter _router = GoRouter(
-  initialLocation: '/',
+  initialLocation: '/player',
   routes: [
-    GoRoute(
-      path: '/',
-      name: 'home',
-      builder: (context, state) => const HomeView(),
-    ),
     GoRoute(
       path: '/player',
       name: 'player',
       builder: (context, state) => const PlayerView(),
-    ),
-    GoRoute(
-      path: '/admin',
-      name: 'admin',
-      builder: (context, state) => const AdminView(),
     ),
   ],
 );
@@ -51,28 +49,7 @@ class HomeView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      body: SizedBox.expand(),
-    );
-  }
-}
-
-class PlayerView extends StatelessWidget {
-  const PlayerView({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return const Scaffold(
-      body: Center(
-        child: Text(
-          'GhostPlayer',
-          style: TextStyle(
-            fontSize: 32,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ),
-    );
+    return const Scaffold(body: SizedBox.expand());
   }
 }
 
@@ -81,10 +58,6 @@ class AdminView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      body: Center(
-        child: Text('Admin'),
-      ),
-    );
+    return const Scaffold(body: Center(child: Text('Admin')));
   }
 }

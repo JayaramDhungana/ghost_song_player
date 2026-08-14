@@ -14,7 +14,13 @@ class AudioService {
   bool get isPlaying => _player.playing;
 
   Future<void> setSong(Song song) async {
-    await _player.setUrl(song.audioUrl);
+    if (song.audioUrl.startsWith('asset://')) {
+      final assetPath = song.audioUrl.replaceFirst('asset://', '');
+
+      await _player.setAsset(assetPath);
+    } else {
+      await _player.setUrl(song.audioUrl);
+    }
   }
 
   Future<void> play() async {
