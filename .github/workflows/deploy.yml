@@ -36,8 +36,14 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
+      # Custom domain is at the root (/),
+      # so Flutter must NOT use /ghost_song_player/
       - name: Build Flutter Web
-        run: flutter build web --release --base-href "/ghost_song_player/"
+        run: flutter build web --release --base-href "/"
+
+      # Keep the custom domain after every deployment
+      - name: Add custom domain
+        run: echo "renuka.jayaramdhungana.com.np" > build/web/CNAME
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
