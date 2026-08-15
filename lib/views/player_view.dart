@@ -102,7 +102,7 @@ class _PlayerViewState extends State<PlayerView> {
                               const SizedBox(height: 20),
 
                               const Text(
-                                'Nepali Songs',
+                                'JD MEDIA PLAYER',
                                 style: TextStyle(
                                   fontSize: 24,
                                   fontWeight: FontWeight.bold,
@@ -222,6 +222,7 @@ class _MobileMiniPlayer extends StatelessWidget {
             children: [
               // Progress
               SliderTheme(
+                
                 data: SliderTheme.of(context).copyWith(
                   trackHeight: 2,
                   thumbShape: const RoundSliderThumbShape(
@@ -230,6 +231,7 @@ class _MobileMiniPlayer extends StatelessWidget {
                 ),
 
                 child: Slider(
+                  padding: EdgeInsets.symmetric(vertical: 0),
                   min: 0,
 
                   max: state.duration.inMilliseconds > 0
@@ -254,39 +256,58 @@ class _MobileMiniPlayer extends StatelessWidget {
                         },
                 ),
               ),
-
               Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  // Song info
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          song.title,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14,
-                          ),
-                        ),
-
-                        const SizedBox(height: 2),
-
-                        Text(
-                          song.artist ?? 'Unknown Artist',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey,
-                          ),
-                        ),
-                      ],
-                    ),
+                  Text(
+                    _formatDuration(state.position),
+                    style: const TextStyle(fontSize: 10, color: Colors.grey),
                   ),
 
+                  Text(
+                    _formatDuration(state.duration),
+                    style: const TextStyle(fontSize: 10, color: Colors.grey),
+                  ),
+                ],
+              ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    song.title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
+
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // Song info
+                  // Expanded(
+                  //   child: Column(
+                  //     crossAxisAlignment: CrossAxisAlignment.start,
+                  //     children: [
+
+                  //       const SizedBox(height: 2),
+
+                  //       // Text(
+                  //       //   song.artist ?? 'Unknown Artist',
+                  //       //   maxLines: 1,
+                  //       //   overflow: TextOverflow.ellipsis,
+                  //       //   style: const TextStyle(
+                  //       //     fontSize: 12,
+                  //       //     color: Colors.grey,
+                  //       //   ),
+                  //       // ),
+                  //     ],
+                  //   ),
+                  // ),
                   IconButton(
                     tooltip: 'Previous',
                     icon: const Icon(Icons.skip_previous),
@@ -335,21 +356,11 @@ class _MobileMiniPlayer extends StatelessWidget {
               ),
 
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text(
-                    _formatDuration(state.position),
-                    style: const TextStyle(fontSize: 10, color: Colors.grey),
-                  ),
-
                   const Text(
                     'Tap for full player',
                     style: TextStyle(fontSize: 10, color: Colors.grey),
-                  ),
-
-                  Text(
-                    _formatDuration(state.duration),
-                    style: const TextStyle(fontSize: 10, color: Colors.grey),
                   ),
                 ],
               ),
@@ -656,11 +667,10 @@ class _MobileFullPlayerState extends State<_MobileFullPlayer> {
 
             const SizedBox(height: 12),
 
-            const Text(
-              'Swipe down to minimize',
-              style: TextStyle(fontSize: 11, color: Colors.grey),
-            ),
-
+            // const Text(
+            //   'Swipe down to minimize',
+            //   style: TextStyle(fontSize: 11, color: Colors.grey),
+            // ),
             const Spacer(),
           ],
         ),
