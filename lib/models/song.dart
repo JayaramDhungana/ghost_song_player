@@ -4,7 +4,7 @@ class Song {
   final String? artist;
   final String audioUrl;
   final String? coverUrl;
-  final String folder;
+  final List<String> folders;
 
   const Song({
     required this.id,
@@ -12,7 +12,7 @@ class Song {
     this.artist,
     required this.audioUrl,
     this.coverUrl,
-    required this.folder,
+    this.folders = const [],
   });
 
   Song copyWith({
@@ -21,7 +21,7 @@ class Song {
     String? artist,
     String? audioUrl,
     String? coverUrl,
-    String? folder,
+    List<String>? folders,
   }) {
     return Song(
       id: id ?? this.id,
@@ -29,7 +29,7 @@ class Song {
       artist: artist ?? this.artist,
       audioUrl: audioUrl ?? this.audioUrl,
       coverUrl: coverUrl ?? this.coverUrl,
-      folder: folder ?? this.folder,
+      folders: folders ?? this.folders,
     );
   }
 
@@ -40,7 +40,7 @@ class Song {
       'artist': artist,
       'audioUrl': audioUrl,
       'coverUrl': coverUrl,
-      'folder': folder,
+      'folders': folders,
     };
   }
 
@@ -51,7 +51,9 @@ class Song {
       artist: json['artist'] as String?,
       audioUrl: json['audioUrl'] as String,
       coverUrl: json['coverUrl'] as String?,
-      folder: json['folder'] as String,
+      folders: (json['folders'] as List<dynamic>? ?? [])
+          .map((folder) => folder.toString())
+          .toList(),
     );
   }
 }

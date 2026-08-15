@@ -19,44 +19,45 @@ class AudioService {
 
   int? get currentIndex => _player.currentIndex;
 
- Future<void> setPlaylist(List<Song> songs) async {
-  _playlist = List.unmodifiable(songs);
+  Future<void> setPlaylist(List<Song> songs) async {
+    _playlist = List.unmodifiable(songs);
 
-  if (_playlist.isEmpty) {
-    await _player.stop();
-    return;
+    if (_playlist.isEmpty) {
+      await _player.stop();
+      return;
+    }
+
+    final sources = _playlist.map((song) {
+      final audioUrl = song.audioUrl;
+
+      // Local Flutter asset
+      if (audioUrl.startsWith('asset://')) {
+        final assetPath = audioUrl.replaceFirst('asset://', '');
+
+        return AudioSource.asset(assetPath, tag: song.id);
+      }
+
+      // Remote audio (Cloudinary, etc.)
+      if (audioUrl.startsWith('http://') || audioUrl.startsWith('https://')) {
+        return AudioSource.uri(Uri.parse(audioUrl), tag: song.id);
+      }
+
+      throw ArgumentError('Unsupported audio source: $audioUrl');
+    }).toList();
+
+    await _player.setAudioSources(
+      sources,
+      initialIndex: 0,
+      initialPosition: Duration.zero,
+    );
   }
-
-  final sources = _playlist.map(
-    (song) {
-      final assetPath = song.audioUrl.replaceFirst(
-        'asset://',
-        '',
-      );
-
-      return AudioSource.asset(
-        assetPath,
-        tag: song.id,
-      );
-    },
-  ).toList();
-
-  await _player.setAudioSources(
-    sources,
-    initialIndex: 0,
-    initialPosition: Duration.zero,
-  );
-}
 
   Future<void> playSongAt(int index) async {
     if (index < 0 || index >= _playlist.length) {
       return;
     }
 
-    await _player.seek(
-      Duration.zero,
-      index: index,
-    );
+    await _player.seek(Duration.zero, index: index);
 
     await _player.play();
   }
@@ -70,10 +71,7 @@ class AudioService {
       await _player.seekToNext();
       await _player.play();
     } else {
-      await _player.seek(
-        Duration.zero,
-        index: 0,
-      );
+      await _player.seek(Duration.zero, index: 0);
       await _player.play();
     }
   }
@@ -87,10 +85,7 @@ class AudioService {
       await _player.seekToPrevious();
       await _player.play();
     } else {
-      await _player.seek(
-        Duration.zero,
-        index: _playlist.length - 1,
-      );
+      await _player.seek(Duration.zero, index: _playlist.length - 1);
       await _player.play();
     }
   }
