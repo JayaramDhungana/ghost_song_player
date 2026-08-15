@@ -24,7 +24,7 @@ class GhostPlayerApp extends StatelessWidget {
     return BlocProvider(
       create: (_) => PlayerBloc(audioService: audioService),
       child: MaterialApp.router(
-        title: 'GhostPlayer',
+        title: 'Renuka',
         debugShowCheckedModeBanner: false,
         theme: ThemeData(brightness: Brightness.dark, useMaterial3: true),
         routerConfig: _router,
