@@ -11,13 +11,17 @@ class SecretMessage extends StatefulWidget {
 
 class _SecretMessageState extends State<SecretMessage>
     with SingleTickerProviderStateMixin {
-  static const String _message = 'Pyari Bahini Renuka , Mitho Samjhana';
+  static const String _desktopMessage = 'Pyari Bahini Renuka , Mitho Samjhana';
+
+  static const String _mobileTopMessage = 'Pyari Bahini Renuka';
+  static const String _mobileBottomMessage = 'Mitho Samjhana';
 
   late final AnimationController _controller;
 
   final math.Random _random = math.Random();
 
   late final List<_Particle> _particles;
+
   late final List<Offset> _characterOffsets;
   late final List<double> _characterRotations;
   late final List<double> _characterScales;
@@ -32,10 +36,10 @@ class _SecretMessageState extends State<SecretMessage>
     )..repeat();
 
     // Background particles
-    _particles = List.generate(45, (index) => _Particle.random(_random));
+    _particles = List.generate(45, (_) => _Particle.random(_random));
 
-    // Character animation data
-    _characterOffsets = List.generate(_message.length, (index) {
+    // Desktop character animation data
+    _characterOffsets = List.generate(_desktopMessage.length, (index) {
       final direction = index.isEven ? -1.0 : 1.0;
 
       return Offset(
@@ -44,12 +48,12 @@ class _SecretMessageState extends State<SecretMessage>
       );
     });
 
-    _characterRotations = List.generate(_message.length, (index) {
+    _characterRotations = List.generate(_desktopMessage.length, (index) {
       return (index.isEven ? -1 : 1) * (0.04 + _random.nextDouble() * 0.08);
     });
 
     _characterScales = List.generate(
-      _message.length,
+      _desktopMessage.length,
       (_) => 0.85 + _random.nextDouble() * 0.1,
     );
   }
@@ -60,10 +64,27 @@ class _SecretMessageState extends State<SecretMessage>
     super.dispose();
   }
 
+  // ═══════════════════════════════════════════════
+  // DESKTOP CHARACTER PROGRESS
+  // ═══════════════════════════════════════════════
+
   double _characterProgress(int index) {
-    final total = _message.length;
+    final total = _desktopMessage.length;
 
     final start = (index / total) * 0.42;
+    final end = start + 0.55;
+
+    final raw = ((_controller.value - start) / (end - start)).clamp(0.0, 1.0);
+
+    return Curves.easeOutCubic.transform(raw);
+  }
+
+  // ═══════════════════════════════════════════════
+  // MOBILE CHARACTER PROGRESS
+  // ═══════════════════════════════════════════════
+
+  double _mobileCharacterProgress(int index, int total, double lineDelay) {
+    final start = lineDelay + (index / total) * 0.22;
     final end = start + 0.55;
 
     final raw = ((_controller.value - start) / (end - start)).clamp(0.0, 1.0);
@@ -80,9 +101,9 @@ class _SecretMessageState extends State<SecretMessage>
           return Stack(
             fit: StackFit.expand,
             children: [
-              // ─────────────────────────────
+              // ═════════════════════════════════════
               // Animated background
-              // ─────────────────────────────
+              // ═════════════════════════════════════
               CustomPaint(
                 painter: _SecretBackgroundPainter(
                   progress: _controller.value,
@@ -90,10 +111,22 @@ class _SecretMessageState extends State<SecretMessage>
                 ),
               ),
 
-              // ─────────────────────────────
-              // Main message
-              // ─────────────────────────────
-              Center(child: _buildMessage()),
+              // ═════════════════════════════════════
+              // Responsive message
+              // ═════════════════════════════════════
+              Center(
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final isMobile = constraints.maxWidth < 600;
+
+                    if (isMobile) {
+                      return _buildMobileMessage();
+                    }
+
+                    return _buildDesktopMessage();
+                  },
+                ),
+              ),
             ],
           );
         },
@@ -101,7 +134,11 @@ class _SecretMessageState extends State<SecretMessage>
     );
   }
 
-  Widget _buildMessage() {
+  // ═══════════════════════════════════════════════
+  // DESKTOP MESSAGE
+  // ═══════════════════════════════════════════════
+
+  Widget _buildDesktopMessage() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24),
       child: Column(
@@ -110,75 +147,183 @@ class _SecretMessageState extends State<SecretMessage>
           Wrap(
             alignment: WrapAlignment.center,
             runAlignment: WrapAlignment.center,
-            children: List.generate(_message.length, (index) {
-              final progress = _characterProgress(index);
-
-              final offset = Offset.lerp(
-                _characterOffsets[index],
-                Offset.zero,
-                progress,
-              )!;
-
-              final rotation = Tween<double>(
-                begin: _characterRotations[index],
-                end: 0,
-              ).transform(progress);
-
-              final scale = Tween<double>(
-                begin: _characterScales[index],
-                end: 1,
-              ).transform(progress);
-
-              final opacity = Curves.easeOutCubic.transform(
-                progress.clamp(0.0, 1.0),
-              );
-
-              // Very subtle floating movement
-              final floating =
-                  math.sin((_controller.value * math.pi * 2) + index * 0.32) *
-                  1.5 *
-                  progress;
-
-              return Opacity(
-                opacity: opacity,
-                child: Transform.translate(
-                  offset: Offset(offset.dx, offset.dy + floating),
-                  child: Transform.rotate(
-                    angle: rotation,
-                    child: Transform.scale(
-                      scale: scale,
-                      child: Text(
-                        _message[index],
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w500,
-                          letterSpacing: 1.3,
-                          color: Color(0xFFE8D7B0),
-                          shadows: [
-                            Shadow(blurRadius: 8, color: Color(0x99D6B56A)),
-                            Shadow(blurRadius: 18, color: Color(0x55D6B56A)),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              );
+            children: List.generate(_desktopMessage.length, (index) {
+              return _buildDesktopCharacter(_desktopMessage[index], index);
             }),
           ),
 
           const SizedBox(height: 16),
 
-          // ─────────────────────────────
-          // Small glowing heart
-          // ─────────────────────────────
           _buildHeart(),
         ],
       ),
     );
   }
 
-  Widget _buildHeart() {
+  // ═══════════════════════════════════════════════
+  // MOBILE MESSAGE
+  // ═══════════════════════════════════════════════
+
+  Widget _buildMobileMessage() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // ─────────────────────────────────────
+          // First line
+          // Pyari Bahini Renuka
+          // ─────────────────────────────────────
+          _buildMobileLine(text: _mobileTopMessage, lineDelay: 0.02),
+
+          const SizedBox(height: 12),
+
+          // ─────────────────────────────────────
+          // Second line
+          // Mitho Samjhana
+          // ─────────────────────────────────────
+          _buildMobileLine(text: _mobileBottomMessage, lineDelay: 0.18),
+
+          const SizedBox(height: 20),
+
+          _buildHeart(lineWidth: 35, iconSize: 18),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMobileLine({required String text, required double lineDelay}) {
+    return Wrap(
+      alignment: WrapAlignment.center,
+      runAlignment: WrapAlignment.center,
+      children: List.generate(text.length, (index) {
+        final progress = _mobileCharacterProgress(
+          index,
+          text.length,
+          lineDelay,
+        );
+
+        final direction = index.isEven ? -1.0 : 1.0;
+
+        final startOffset = Offset(
+          direction * (12 + _randomOffset(index)),
+          12 + _randomVerticalOffset(index),
+        );
+
+        final offset = Offset.lerp(startOffset, Offset.zero, progress)!;
+
+        final rotation = (index.isEven ? -1 : 1) * 0.035 * (1.0 - progress);
+
+        final scale = Tween<double>(begin: 0.92, end: 1.0).transform(progress);
+
+        final opacity = Curves.easeOutCubic.transform(progress.clamp(0.0, 1.0));
+
+        final floating =
+            math.sin((_controller.value * math.pi * 2) + index * 0.32) *
+            1.2 *
+            progress;
+
+        return Opacity(
+          opacity: opacity,
+          child: Transform.translate(
+            offset: Offset(offset.dx, offset.dy + floating),
+            child: Transform.rotate(
+              angle: rotation,
+              child: Transform.scale(
+                scale: scale,
+                child: Text(
+                  text[index],
+                  style: const TextStyle(
+                    decoration: TextDecoration.none,
+                    fontSize: 19,
+                    fontWeight: FontWeight.w500,
+                    letterSpacing: 1.25,
+                    color: Color(0xFFE8D7B0),
+                    shadows: [
+                      Shadow(blurRadius: 8, color: Color(0x99D6B56A)),
+                      Shadow(blurRadius: 18, color: Color(0x55D6B56A)),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      }),
+    );
+  }
+
+  double _randomOffset(int index) {
+    return 10 + ((index * 7) % 18);
+  }
+
+  double _randomVerticalOffset(int index) {
+    return 8 + ((index * 5) % 14);
+  }
+
+  // ═══════════════════════════════════════════════
+  // DESKTOP CHARACTER
+  // ═══════════════════════════════════════════════
+
+  Widget _buildDesktopCharacter(String character, int index) {
+    final progress = _characterProgress(index);
+
+    final offset = Offset.lerp(
+      _characterOffsets[index],
+      Offset.zero,
+      progress,
+    )!;
+
+    final rotation = Tween<double>(
+      begin: _characterRotations[index],
+      end: 0,
+    ).transform(progress);
+
+    final scale = Tween<double>(
+      begin: _characterScales[index],
+      end: 1,
+    ).transform(progress);
+
+    final opacity = Curves.easeOutCubic.transform(progress.clamp(0.0, 1.0));
+
+    final floating =
+        math.sin((_controller.value * math.pi * 2) + index * 0.32) *
+        1.5 *
+        progress;
+
+    return Opacity(
+      opacity: opacity,
+      child: Transform.translate(
+        offset: Offset(offset.dx, offset.dy + floating),
+        child: Transform.rotate(
+          angle: rotation,
+          child: Transform.scale(
+            scale: scale,
+            child: Text(
+              character,
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w500,
+                letterSpacing: 1.3,
+                color: Color(0xFFE8D7B0),
+                decoration: TextDecoration.none,
+                shadows: [
+                  Shadow(blurRadius: 8, color: Color(0x99D6B56A)),
+                  Shadow(blurRadius: 18, color: Color(0x55D6B56A)),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ═══════════════════════════════════════════════
+  // HEART
+  // ═══════════════════════════════════════════════
+
+  Widget _buildHeart({double lineWidth = 45, double iconSize = 18}) {
     final pulse = 1.0 + math.sin(_controller.value * math.pi * 2) * 0.08;
 
     final opacity = 0.55 + math.sin(_controller.value * math.pi * 2) * 0.15;
@@ -190,25 +335,29 @@ class _SecretMessageState extends State<SecretMessage>
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            _buildLine(),
+            _buildLine(width: lineWidth),
+
             const SizedBox(width: 10),
-            const Icon(
+
+            Icon(
               Icons.favorite_border,
-              size: 18,
-              color: Color(0xFFE8C98B),
-              shadows: [Shadow(blurRadius: 10, color: Color(0x88E8C98B))],
+              size: iconSize,
+              color: const Color(0xFFE8C98B),
+              shadows: const [Shadow(blurRadius: 10, color: Color(0x88E8C98B))],
             ),
+
             const SizedBox(width: 10),
-            _buildLine(),
+
+            _buildLine(width: lineWidth),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildLine() {
+  Widget _buildLine({required double width}) {
     return Container(
-      width: 45,
+      width: width,
       height: 1,
       decoration: const BoxDecoration(
         gradient: LinearGradient(
@@ -264,9 +413,9 @@ class _SecretBackgroundPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    // ─────────────────────────────
+    // ═══════════════════════════════════════════
     // Dark cinematic background
-    // ─────────────────────────────
+    // ═══════════════════════════════════════════
 
     final backgroundPaint = Paint()
       ..shader = const LinearGradient(
@@ -282,9 +431,9 @@ class _SecretBackgroundPainter extends CustomPainter {
 
     canvas.drawRect(Offset.zero & size, backgroundPaint);
 
-    // ─────────────────────────────
+    // ═══════════════════════════════════════════
     // Moving soft glow
-    // ─────────────────────────────
+    // ═══════════════════════════════════════════
 
     final glowX = size.width * (0.5 + math.sin(progress * math.pi * 2) * 0.12);
 
@@ -293,12 +442,8 @@ class _SecretBackgroundPainter extends CustomPainter {
 
     final glowPaint = Paint()
       ..shader =
-          RadialGradient(
-            colors: [
-              const Color(0x334C3A70),
-              const Color(0x142A315F),
-              Colors.transparent,
-            ],
+          const RadialGradient(
+            colors: [Color(0x334C3A70), Color(0x142A315F), Colors.transparent],
           ).createShader(
             Rect.fromCircle(
               center: Offset(glowX, glowY),
@@ -308,9 +453,9 @@ class _SecretBackgroundPainter extends CustomPainter {
 
     canvas.drawCircle(Offset(glowX, glowY), size.width * 0.55, glowPaint);
 
-    // ─────────────────────────────
+    // ═══════════════════════════════════════════
     // Floating particles
-    // ─────────────────────────────
+    // ═══════════════════════════════════════════
 
     for (final particle in particles) {
       final movement =
@@ -332,14 +477,14 @@ class _SecretBackgroundPainter extends CustomPainter {
       canvas.drawCircle(Offset(x, y), particle.size, paint);
     }
 
-    // ─────────────────────────────
+    // ═══════════════════════════════════════════
     // Subtle bottom light
-    // ─────────────────────────────
+    // ═══════════════════════════════════════════
 
     final bottomGlow = Paint()
       ..shader =
-          RadialGradient(
-            colors: [const Color(0x225F4B6E), Colors.transparent],
+          const RadialGradient(
+            colors: [Color(0x225F4B6E), Colors.transparent],
           ).createShader(
             Rect.fromCircle(
               center: Offset(size.width * 0.5, size.height * 0.95),
@@ -353,9 +498,9 @@ class _SecretBackgroundPainter extends CustomPainter {
       bottomGlow,
     );
 
-    // ─────────────────────────────
+    // ═══════════════════════════════════════════
     // Thin cinematic light line
-    // ─────────────────────────────
+    // ═══════════════════════════════════════════
 
     final wavePaint = Paint()
       ..color = const Color(0x226E638A)

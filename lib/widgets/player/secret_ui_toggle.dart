@@ -19,40 +19,76 @@ class SecretUiToggle extends StatefulWidget {
 }
 
 class _SecretUiToggleState extends State<SecretUiToggle> {
-  late final FocusNode _focusNode;
-
   Offset? _startPoint;
   Offset? _lastPoint;
 
-  int _stroke = 0;
+  bool _validSwipe = false;
   DateTime? _gestureStart;
 
   static const Duration _maxGestureDuration = Duration(seconds: 2);
+  static const double _minimumSwipeDistance = 45;
 
-  static const double _minimumStrokeDistance = 45;
+  // ─────────────────────────────────────────────
+  // LIFECYCLE
+  // ─────────────────────────────────────────────
 
   @override
   void initState() {
     super.initState();
 
-    _focusNode = FocusNode();
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        _focusNode.requestFocus();
-      }
-    });
+    // Global keyboard listener.
+    //
+    // यसले TextField focus भएको बेला पनि
+    // Ctrl + Shift + Alt + H सुन्छ।
+    HardwareKeyboard.instance.addHandler(_handleGlobalKey);
   }
 
   @override
   void dispose() {
-    _focusNode.dispose();
+    HardwareKeyboard.instance.removeHandler(_handleGlobalKey);
     super.dispose();
   }
+
+  // ─────────────────────────────────────────────
+  // SECRET TOGGLE
+  // ─────────────────────────────────────────────
 
   void _toggleUi() {
     widget.visibility.value = !widget.visibility.value;
   }
+
+  // ─────────────────────────────────────────────
+  // GLOBAL KEYBOARD
+  //
+  // Ctrl + Shift + Alt + H
+  // ─────────────────────────────────────────────
+
+  bool _handleGlobalKey(KeyEvent event) {
+    if (event is! KeyDownEvent) {
+      return false;
+    }
+
+    final keyboard = HardwareKeyboard.instance;
+
+    final isShortcut =
+        keyboard.isControlPressed &&
+        keyboard.isShiftPressed &&
+        keyboard.isAltPressed &&
+        event.logicalKey == LogicalKeyboardKey.keyH;
+
+    if (!isShortcut) {
+      return false;
+    }
+
+    _toggleUi();
+
+    // Event consume गर्ने।
+    return true;
+  }
+
+  // ─────────────────────────────────────────────
+  // MOBILE DEVICE
+  // ─────────────────────────────────────────────
 
   bool get _isTouchDevice {
     return defaultTargetPlatform == TargetPlatform.android ||
@@ -60,13 +96,16 @@ class _SecretUiToggleState extends State<SecretUiToggle> {
   }
 
   // ─────────────────────────────────────────────
-  // Z GESTURE
+  // MOBILE SECRET GESTURE
+  //
+  // माथिबाट तल तान्ने
+  // ↓
   // ─────────────────────────────────────────────
 
   void _resetGesture() {
     _startPoint = null;
     _lastPoint = null;
-    _stroke = 0;
+    _validSwipe = false;
     _gestureStart = null;
   }
 
@@ -77,50 +116,23 @@ class _SecretUiToggleState extends State<SecretUiToggle> {
 
     _startPoint = details.localPosition;
     _lastPoint = details.localPosition;
-    _stroke = 0;
+    _validSwipe = false;
     _gestureStart = DateTime.now();
   }
 
   void _updateGesture(DragUpdateDetails details) {
-    if (!_isTouchDevice || _lastPoint == null) {
+    if (!_isTouchDevice || _startPoint == null) {
       return;
     }
 
     final current = details.localPosition;
 
-    final dx = current.dx - _lastPoint!.dx;
-    final dy = current.dy - _lastPoint!.dy;
+    final dx = current.dx - _startPoint!.dx;
+    final dy = current.dy - _startPoint!.dy;
 
-    if (dx.abs() < 5 && dy.abs() < 5) {
-      return;
-    }
-
-    final horizontal = dx.abs() > dy.abs();
-
-    // ─────────────────────────────
-    // Stroke 1: →
-    // ─────────────────────────────
-
-    if (_stroke == 0 &&
-        dx > 0 &&
-        horizontal &&
-        dx.abs() >= _minimumStrokeDistance) {
-      _stroke = 1;
-    }
-    // ─────────────────────────────
-    // Stroke 2: ↙
-    // ─────────────────────────────
-    else if (_stroke == 1 && dx < 0 && dy > 0 && dx.abs() > 5 && dy.abs() > 5) {
-      _stroke = 2;
-    }
-    // ─────────────────────────────
-    // Stroke 3: ←
-    // ─────────────────────────────
-    else if (_stroke == 2 &&
-        dx < 0 &&
-        horizontal &&
-        dx.abs() >= _minimumStrokeDistance) {
-      _stroke = 3;
+    // सीधा तलतिर गएको हुनुपर्छ।
+    if (dy >= _minimumSwipeDistance && dy.abs() > dx.abs() * 1.5) {
+      _validSwipe = true;
     }
 
     _lastPoint = current;
@@ -128,6 +140,7 @@ class _SecretUiToggleState extends State<SecretUiToggle> {
 
   void _endGesture(DragEndDetails details) {
     if (!_isTouchDevice ||
+        !_validSwipe ||
         _startPoint == null ||
         _lastPoint == null ||
         _gestureStart == null) {
@@ -137,11 +150,13 @@ class _SecretUiToggleState extends State<SecretUiToggle> {
 
     final elapsed = DateTime.now().difference(_gestureStart!);
 
-    final totalDistance = (_lastPoint! - _startPoint!).distance;
+    final dx = _lastPoint!.dx - _startPoint!.dx;
+    final dy = _lastPoint!.dy - _startPoint!.dy;
 
-    if (elapsed <= _maxGestureDuration &&
-        _stroke == 3 &&
-        totalDistance >= _minimumStrokeDistance) {
+    final isVerticalDownSwipe =
+        dy >= _minimumSwipeDistance && dy.abs() > dx.abs() * 1.5;
+
+    if (elapsed <= _maxGestureDuration && isVerticalDownSwipe) {
       _toggleUi();
     }
 
@@ -149,75 +164,44 @@ class _SecretUiToggleState extends State<SecretUiToggle> {
   }
 
   // ─────────────────────────────────────────────
-  // KEYBOARD SHORTCUT
-  // Ctrl + Shift + Alt + H
+  // BUILD
   // ─────────────────────────────────────────────
-
-  bool _isSecretKeyboardShortcut(KeyEvent event) {
-    if (event is! KeyDownEvent) {
-      return false;
-    }
-
-    return HardwareKeyboard.instance.isControlPressed &&
-        HardwareKeyboard.instance.isShiftPressed &&
-        HardwareKeyboard.instance.isAltPressed &&
-        event.logicalKey == LogicalKeyboardKey.keyH;
-  }
 
   @override
   Widget build(BuildContext context) {
-    return KeyboardListener(
-      focusNode: _focusNode,
-      onKeyEvent: (event) {
-        if (_isSecretKeyboardShortcut(event)) {
-          _toggleUi();
-        }
-      },
-      child: GestureDetector(
-        behavior: HitTestBehavior.translucent,
-        onPanStart: _startGesture,
-        onPanUpdate: _updateGesture,
-        onPanEnd: _endGesture,
-        child: ValueListenableBuilder<bool>(
-          valueListenable: widget.visibility,
-          builder: (context, isVisible, child) {
-            return Stack(
-              fit: StackFit.expand,
-              children: [
-                AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 1200),
-                  switchInCurve: Curves.easeOutCubic,
-                  switchOutCurve: Curves.easeInCubic,
-                  transitionBuilder: (child, animation) {
-                    return FadeTransition(opacity: animation, child: child);
-                  },
-                  child: isVisible
-                      ? KeyedSubtree(
-                          key: const ValueKey('player'),
-                          child: widget.child,
-                        )
-                      : const KeyedSubtree(
-                          key: ValueKey('secret-message'),
-                          child: SecretMessage(),
-                        ),
-                ),
+    return GestureDetector(
+      behavior: HitTestBehavior.translucent,
 
-                // Secret gesture capture layer.
-                //
-                // Transparent छ, त्यसैले screen देखिँदैन।
-                // IgnorePointer राखिएको छ ताकि Player UI को
-                // normal interactions block नहोस्।
-                if (!kIsWeb || _isTouchDevice)
-                  const Positioned.fill(
-                    child: IgnorePointer(
-                      ignoring: true,
-                      child: ColoredBox(color: Colors.transparent),
-                    ),
-                  ),
-              ],
-            );
-          },
-        ),
+      onPanStart: _startGesture,
+      onPanUpdate: _updateGesture,
+      onPanEnd: _endGesture,
+
+      child: ValueListenableBuilder<bool>(
+        valueListenable: widget.visibility,
+        builder: (context, isVisible, child) {
+          return Stack(
+            fit: StackFit.expand,
+            children: [
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 1200),
+                switchInCurve: Curves.easeOutCubic,
+                switchOutCurve: Curves.easeInCubic,
+                transitionBuilder: (child, animation) {
+                  return FadeTransition(opacity: animation, child: child);
+                },
+                child: isVisible
+                    ? KeyedSubtree(
+                        key: const ValueKey('player'),
+                        child: widget.child,
+                      )
+                    : const KeyedSubtree(
+                        key: ValueKey('secret-message'),
+                        child: SecretMessage(),
+                      ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
