@@ -6,7 +6,7 @@ class MusicLibraryData {
       id: '1',
       title: 'BASYO MAYA',
       artist: 'Local',
-      audioUrl: 'asset://audio/BASYO_MAYA(128k).mp3',
+      audioUrl: 'asset://audio/BASYO_MAYA.mp3',
       folders: ['Lok', 'Favourite'],
     ),
 

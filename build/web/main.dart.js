@@ -16049,7 +16049,7 @@ _.dx=$},
 Fd:function Fd(){},
 Ub:function Ub(){},
 aAF(a,b){var s,r,q,p,o,n,m,l,k,j,i,h,g,f
-if(a==null)a=B.k8
+if(a==null)a=B.k9
 s=J.bd(a)
 r=s.gH(a)-1
 q=A.bo(0,null,!1,t.Eg)
@@ -16226,7 +16226,7 @@ r.gJ0()
 q.sJ0(r.gJ0())
 r.gJ_()
 q.sJ_(r.gJ_())
-s.lX(B.k8,q)
+s.lX(B.k9,q)
 s.sbg(b.gbg())
 s.sbZ(b.gbZ())
 s.dy=b.gatX()
@@ -64016,7 +64016,7 @@ s.aE=b.X
 s.b5=b.az
 s.p=b.aA
 s.CW=b.c
-s.afQ(a==null?B.k8:a)},
+s.afQ(a==null?B.k9:a)},
 YE(a){return this.lX(null,a)},
 Zk(){var s,r,q,p,o,n,m,l,k,j,i,h,g,f,e,d,c,b,a,a0,a1,a2,a3,a4,a5,a6=this,a7={}
 a7.a=a6.fr
@@ -78535,7 +78535,7 @@ guh(){return A.aT4()},
 ab1(){if(this.x)return
 this.ym()},
 Zj(){var s,r,q,p,o,n,m,l,k,j,i,h,g,f,e,d,c=this,b=null,a=c.c
-if(a===-1||c.d===-1||c.b.length===0)return new A.nh(b,b,B.cm,B.k7,c.b.length!==0)
+if(a===-1||c.d===-1||c.b.length===0)return new A.nh(b,b,B.cm,B.k8,c.b.length!==0)
 if(!c.as){a=c.M8(c.d,a)
 c.d=a
 c.c=c.M8(c.c,a)}s=c.b[c.d].gm()
@@ -82226,10 +82226,10 @@ return A.ay2(new A.By(s,A.aAQ(null,A.aBN(new A.anL(),s,t.y)),null),new A.anM(),t
 A.anN.prototype={
 $1(a){var s=this.a.c
 s.toString
-J.cM(A.hx(s,!1,t.LL),new A.pD(B.ka))},
+J.cM(A.hx(s,!1,t.LL),new A.pD(B.k7))},
 $S:6}
 A.anM.prototype={
-$1(a){var s=new A.mJ(new A.dg(null,null,t.XV),A.c([],t.aU),A.c([],t._X),A.c([],t.Nd),$.ax_(),B.mq,new A.eq(B.ka,B.ka,"",null,!1))
+$1(a){var s=new A.mJ(new A.dg(null,null,t.XV),A.c([],t.aU),A.c([],t._X),A.c([],t.Nd),$.ax_(),B.mq,new A.eq(B.k7,B.k7,"",null,!1))
 s.hC(s.gadO(),t.KA)
 s.hC(s.gae9(),t.gX)
 s.hC(s.gadD(),t.Bv)
@@ -82681,8 +82681,8 @@ anl(a){return this.zW(a,null)},
 a8B(a,b){var s,r,q,p,o
 for(s=this.a.a.a,r=this.b,q=0;q<1;++q){p=s[q]
 o=A.aAL("","",b,a.gcW(),p,r,a).i(0,null)
-if(o==null)o=B.k9
-if(J.kf(o))return o}return B.k9},
+if(o==null)o=B.ka
+if(J.kf(o))return o}return B.ka},
 XW(a,b,c){var s=new A.adn(this,c,a).$1(b)
 return s},
 ajI(a,b,c){var s,r,q,p,o,n=b.c,m=new A.adm(this,n.k(0),b,c)
@@ -91002,6 +91002,17 @@ B.CF=new A.oD(0,"auto")
 B.CG=new A.oD(1,"full")
 B.CH=new A.oD(2,"chromium")
 B.Hv=s([B.CF,B.CG,B.CH,B.ce],A.ac("t<oD>"))
+B.Ha=s(["Lok","Favourite"],t.s)
+B.OY=new A.eV("1","BASYO MAYA","Local","asset://audio/BASYO_MAYA.mp3",B.Ha)
+B.hh=s(["Lok"],t.s)
+B.OW=new A.eV("2","Gauri","Local","asset://audio/Gauri.mp3",B.hh)
+B.OX=new A.eV("3","Nuwakote Yo Jhilke Keto","Local","asset://audio/nuwakote_yo_jhilke.mp3",B.hh)
+B.nT=s(["Bhajan"],t.s)
+B.OZ=new A.eV("4","Krishna Bhajan","Ibsal Sanjyal","https://res.cloudinary.com/gl3ydn8a/video/upload/Krishna_Bhajan___%E0%A4%95%E0%A5%83%E0%A4%B7%E0%A5%8D%E0%A4%A3_%E0%A4%A4%E0%A4%BF%E0%A4%AE%E0%A5%80%E0%A4%B2%E0%A4%BE%E0%A4%88_%E0%A4%B0%E0%A4%BE%E0%A4%A7%E0%A4%BE_%E0%A4%B8%E0%A5%81%E0%A4%B9%E0%A4%BE%E0%A4%95%E0%A5%8B___%E0%A4%A8%E0%A5%87%E0%A4%AA%E0%A4%BE%E0%A4%B2%E0%A5%80_%E0%A4%95%E0%A5%83%E0%A4%B7%E0%A5%8D%E0%A4%A3_%E0%A4%AD%E0%A4%9C%E0%A4%A8___Ibsal_Sanjyal___Ashok_Pandey..mp3",B.nT)
+B.P_=new A.eV("5","Shanti Jagau","shanti jagau","https://res.cloudinary.com/gl3ydn8a/video/upload/znsmdf50cvlq9xbibdlo.mp3",B.nT)
+B.P0=new A.eV("6","Badulki Kukka","shanti jagau","https://res.cloudinary.com/gl3ydn8a/video/upload/rzg3dygo3gfku7auhr8o.mp3",B.hh)
+B.P1=new A.eV("7","Authi Chino Xa","shanti jagau","https://res.cloudinary.com/gl3ydn8a/video/upload/vpio0edamyo9er4crlp2.mp3",B.hh)
+B.k7=s([B.OY,B.OW,B.OX,B.OZ,B.P_,B.P0,B.P1],t.GR)
 B.tU=new A.tV(0,"off")
 B.tV=new A.tV(1,"one")
 B.tW=new A.tV(2,"all")
@@ -91049,12 +91060,12 @@ B.XH=s([],t.tc)
 B.hi=s([],t.jl)
 B.HV=s([],t.wi)
 B.HT=s([],A.ac("t<f8<@>>"))
-B.k7=s([],t.AO)
+B.k8=s([],t.AO)
 B.HU=s([],t.yo)
 B.af=s([],t.i3)
-B.k9=s([],t.K1)
+B.ka=s([],t.K1)
 B.HO=s([],t.D1)
-B.k8=s([],t.QF)
+B.k9=s([],t.QF)
 B.HG=s([],t.Lx)
 B.HL=s([],t.fm)
 B.HN=s([],t.E)
@@ -91079,17 +91090,6 @@ B.HZ=s([B.lP,B.AB,B.lQ,B.AC,B.AD],A.ac("t<m8>"))
 B.KG=new A.h(0,2)
 B.Bl=new A.e4(0.75,B.e3,B.mC,B.KG,1.5)
 B.I1=s([B.Bl],t.sq)
-B.Ha=s(["Lok","Favourite"],t.s)
-B.OY=new A.eV("1","BASYO MAYA","Local","asset://audio/BASYO_MAYA(128k).mp3",B.Ha)
-B.hh=s(["Lok"],t.s)
-B.OW=new A.eV("2","Gauri","Local","asset://audio/Gauri.mp3",B.hh)
-B.OX=new A.eV("3","Nuwakote Yo Jhilke Keto","Local","asset://audio/nuwakote_yo_jhilke.mp3",B.hh)
-B.nT=s(["Bhajan"],t.s)
-B.OZ=new A.eV("4","Krishna Bhajan","Ibsal Sanjyal","https://res.cloudinary.com/gl3ydn8a/video/upload/Krishna_Bhajan___%E0%A4%95%E0%A5%83%E0%A4%B7%E0%A5%8D%E0%A4%A3_%E0%A4%A4%E0%A4%BF%E0%A4%AE%E0%A5%80%E0%A4%B2%E0%A4%BE%E0%A4%88_%E0%A4%B0%E0%A4%BE%E0%A4%A7%E0%A4%BE_%E0%A4%B8%E0%A5%81%E0%A4%B9%E0%A4%BE%E0%A4%95%E0%A5%8B___%E0%A4%A8%E0%A5%87%E0%A4%AA%E0%A4%BE%E0%A4%B2%E0%A5%80_%E0%A4%95%E0%A5%83%E0%A4%B7%E0%A5%8D%E0%A4%A3_%E0%A4%AD%E0%A4%9C%E0%A4%A8___Ibsal_Sanjyal___Ashok_Pandey..mp3",B.nT)
-B.P_=new A.eV("5","Shanti Jagau","shanti jagau","https://res.cloudinary.com/gl3ydn8a/video/upload/znsmdf50cvlq9xbibdlo.mp3",B.nT)
-B.P0=new A.eV("6","Badulki Kukka","shanti jagau","https://res.cloudinary.com/gl3ydn8a/video/upload/rzg3dygo3gfku7auhr8o.mp3",B.hh)
-B.P1=new A.eV("7","Authi Chino Xa","shanti jagau","https://res.cloudinary.com/gl3ydn8a/video/upload/vpio0edamyo9er4crlp2.mp3",B.hh)
-B.ka=s([B.OY,B.OW,B.OX,B.OZ,B.P_,B.P0,B.P1],t.GR)
 B.ey=s([B.ct,B.bO,B.fl,B.fm,B.iJ],t.QP)
 B.cR=new A.n7(0,"idle")
 B.xW=new A.n7(1,"loading")
@@ -92237,8 +92237,8 @@ B.kO=new A.uN(1,"nextLine")
 B.hQ=new A.uN(2,"forward")
 B.hR=new A.uN(3,"backward")
 B.cm=new A.BD(2,"none")
-B.yf=new A.nh(null,null,B.cm,B.k7,!0)
-B.yg=new A.nh(null,null,B.cm,B.k7,!1)
+B.yf=new A.nh(null,null,B.cm,B.k8,!0)
+B.yg=new A.nh(null,null,B.cm,B.k8,!1)
 B.z=new A.ni(0,"next")
 B.D=new A.ni(1,"previous")
 B.G=new A.ni(2,"end")
@@ -93671,7 +93671,7 @@ s($,"aXt","aGJ",()=>{var q=null,p=A.c([A.azf(new A.asQ(),"player","/player")],t.
 return A.aJR(!1,q,q,q,q,"/player",q,q,q,!1,q,!0,q,!1,new A.Q7(new A.adC(p,A.aT_(),5,q)))})
 s($,"aU4","atF",()=>A.aMd(null,A.df("")))
 r($,"aVj","axd",()=>{var q=null
-return A.aMf(q,q,B.k9,B.b9,A.GF(q,q,q,q,q))})
+return A.aMf(q,q,B.ka,B.b9,A.GF(q,q,q,q,q))})
 s($,"aXp","axq",()=>A.d3(":(\\w+)(\\((?:\\\\.|[^\\\\()])+\\))?",!0,!1))
 s($,"aU9","ax7",()=>new A.u())
 r($,"aKg","aEB",()=>{var q=new A.a9n()
