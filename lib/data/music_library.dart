@@ -3,17 +3,32 @@ import '../models/song.dart';
 class MusicLibraryData {
   static const List<Song> songs = [
     Song(
+      id: '0',
+      title: 'Nai Ma Maya Laudina',
+      artist: 'Local',
+      audioUrl:
+          'asset://audio/Nai_Ma_Maya_Laudina___So_Simple___Nepali_Movie_Song___Bhawana_Regmi___Pramod_Bhardwo.mp3',
+      folders: ['Pop', 'Favourite'],
+    ),
+    Song(
       id: '1',
       title: 'BASYO MAYA',
-      artist: 'Local',
+      artist: 'Smriti Gautam',
       audioUrl: 'asset://audio/BASYO_MAYA.mp3',
+      folders: ['Lok', 'Favourite'],
+    ),
+    Song(
+      id: '1.1',
+      title: 'E Kanxu I Love You',
+      artist: 'Smriti Gautam',
+      audioUrl: 'asset://audio/E_Kanchhu_I_Love_You.mp3',
       folders: ['Lok', 'Favourite'],
     ),
 
     Song(
       id: '2',
       title: 'Gauri',
-      artist: 'Local',
+      artist: 'Unknown',
       audioUrl: 'asset://audio/Gauri.mp3',
       folders: ['Lok'],
     ),
@@ -21,8 +36,15 @@ class MusicLibraryData {
     Song(
       id: '3',
       title: 'Nuwakote Yo Jhilke Keto',
-      artist: 'Local',
+      artist: 'Sanu KC ',
       audioUrl: 'asset://audio/nuwakote_yo_jhilke.mp3',
+      folders: ['Lok'],
+    ),
+    Song(
+      id: '3.1',
+      title: 'Nuwakote Yo Jhilke Keto 2',
+      artist: 'Sanu KC ',
+      audioUrl: 'asset://audio/Nuwakote_Yo_Jhilke_Keto_2.mp3',
       folders: ['Lok'],
     ),
 
@@ -56,6 +78,49 @@ class MusicLibraryData {
       artist: 'shanti jagau',
       audioUrl:
           'https://res.cloudinary.com/gl3ydn8a/video/upload/vpio0edamyo9er4crlp2.mp3',
+      folders: ['Lok'],
+    ),
+    Song(
+      id: '8',
+      title: 'Jaun Ta Bhane Bataima Khola',
+      artist: 'Unknown',
+      audioUrl: 'asset://audio/Jaun_Ta_Bhane_Bataima_Khola.mp3',
+      folders: ['Lok'],
+    ),
+    Song(
+      id: '9',
+      title: 'Sirma Sirbandi',
+      artist: 'Samikshya_Adhikari',
+      audioUrl:
+          'asset://audio/Shirma_Shirbandi_-_Samikshya_Adhikari___Subash_Khatri___Prabhat_Pal_Thakuri___New_Nepali_Song.mp3',
+      folders: ['Lok'],
+    ),
+    Song(
+      id: '10',
+      title: 'sunkoshi ma sun chhaina',
+      artist: 'Unknown',
+      audioUrl: 'asset://audio/sunkoshi ma sun chhaina.mp3',
+      folders: ['Lok'],
+    ),
+    Song(
+      id: '11',
+      title: 'Ululu',
+      artist: 'Prima Aryal',
+      audioUrl: 'asset://audio/Ululu.mp3',
+      folders: ['Lok'],
+    ),
+    Song(
+      id: '12',
+      title: 'He maya Baiguni',
+      artist: 'Sanu KC,Pratima Aryal',
+      audioUrl: 'asset://audio/He maya Baiguni.mp3',
+      folders: ['Lok'],
+    ),
+    Song(
+      id: '13',
+      title: 'Jhyappai aaye bahun dai',
+      artist: 'Badri Pangeni,Jyoti Magar',
+      audioUrl: 'asset://audio/Jhyappai aaye bahun dai.mp3',
       folders: ['Lok'],
     ),
   ];

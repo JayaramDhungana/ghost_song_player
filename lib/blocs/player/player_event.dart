@@ -67,3 +67,12 @@ class AudioPlayerStateChanged extends PlayerEvent {
     required this.processingState,
   });
 }
+
+
+class CurrentIndexChanged extends PlayerEvent {
+  final int? index;
+
+  const CurrentIndexChanged(this.index);
+
+}
+

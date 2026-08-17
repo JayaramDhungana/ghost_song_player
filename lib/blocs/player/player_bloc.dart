@@ -13,10 +13,12 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
   StreamSubscription<Duration>? _positionSubscription;
   StreamSubscription<Duration?>? _durationSubscription;
   StreamSubscription<just_audio.PlayerState>? _playerStateSubscription;
+  StreamSubscription<int?>? _currentIndexSubscription;
 
   PlayerBloc({required AudioService audioService})
     : _audioService = audioService,
       super(const PlayerState()) {
+    // User events
     on<LoadPlaylist>(_onLoadPlaylist);
     on<PlaySong>(_onPlaySong);
     on<TogglePlayPause>(_onTogglePlayPause);
@@ -26,12 +28,18 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
     on<SeekSong>(_onSeekSong);
     on<SetVolume>(_onSetVolume);
 
+    // Audio player events
     on<PlayerPositionChanged>(_onPlayerPositionChanged);
     on<PlayerDurationChanged>(_onPlayerDurationChanged);
     on<AudioPlayerStateChanged>(_onAudioPlayerStateChanged);
+    on<CurrentIndexChanged>(_onCurrentIndexChanged);
 
     _listenToAudioPlayer();
   }
+
+  // ============================================================
+  // JUST AUDIO STREAMS
+  // ============================================================
 
   void _listenToAudioPlayer() {
     _positionSubscription = _audioService.positionStream.listen((position) {
@@ -54,7 +62,21 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
         ),
       );
     });
+
+    // IMPORTANT:
+    // Only listen to index changes.
+    //
+    // We do NOT reset position/duration here.
+    _currentIndexSubscription = _audioService.currentIndexStream.listen((
+      index,
+    ) {
+      add(CurrentIndexChanged(index));
+    });
   }
+
+  // ============================================================
+  // LOAD PLAYLIST
+  // ============================================================
 
   Future<void> _onLoadPlaylist(
     LoadPlaylist event,
@@ -67,6 +89,7 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
           status: event.songs.isEmpty
               ? PlayerStatus.initial
               : PlayerStatus.loading,
+          clearCurrentSong: true,
           clearError: true,
         ),
       );
@@ -88,6 +111,10 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
     }
   }
 
+  // ============================================================
+  // PLAY SONG
+  // ============================================================
+
   Future<void> _onPlaySong(PlaySong event, Emitter<PlayerState> emit) async {
     try {
       final index = state.playlist.indexWhere(
@@ -98,6 +125,16 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
         return;
       }
 
+      // Same song is already selected.
+      // Don't reset duration — otherwise slider becomes inactive.
+      if (_audioService.currentIndex == index) {
+        await _audioService.seek(Duration.zero);
+        await _audioService.play();
+
+        return;
+      }
+
+      // Different song selected.
       emit(
         state.copyWith(
           status: PlayerStatus.loading,
@@ -118,6 +155,10 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
       );
     }
   }
+
+  // ============================================================
+  // TOGGLE PLAY / PAUSE
+  // ============================================================
 
   Future<void> _onTogglePlayPause(
     TogglePlayPause event,
@@ -143,6 +184,10 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
     }
   }
 
+  // ============================================================
+  // PAUSE
+  // ============================================================
+
   Future<void> _onPauseSong(PauseSong event, Emitter<PlayerState> emit) async {
     try {
       await _audioService.pause();
@@ -158,6 +203,10 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
     }
   }
 
+  // ============================================================
+  // NEXT
+  // ============================================================
+
   Future<void> _onNextSong(NextSong event, Emitter<PlayerState> emit) async {
     if (state.playlist.isEmpty) {
       return;
@@ -168,15 +217,10 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
 
       await _audioService.next();
 
-      final index = _audioService.currentIndex;
-
-      if (index == null || index < 0 || index >= state.playlist.length) {
-        return;
-      }
-
-      final song = state.playlist[index];
-
-      emit(state.copyWith(currentSong: song, position: Duration.zero));
+      // DO NOT manually update currentSong here.
+      //
+      // currentIndexStream will emit the new index.
+      // _onCurrentIndexChanged() will update currentSong.
     } catch (error) {
       emit(
         state.copyWith(
@@ -186,6 +230,10 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
       );
     }
   }
+
+  // ============================================================
+  // PREVIOUS
+  // ============================================================
 
   Future<void> _onPreviousSong(
     PreviousSong event,
@@ -200,15 +248,7 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
 
       await _audioService.previous();
 
-      final index = _audioService.currentIndex;
-
-      if (index == null || index < 0 || index >= state.playlist.length) {
-        return;
-      }
-
-      final song = state.playlist[index];
-
-      emit(state.copyWith(currentSong: song, position: Duration.zero));
+      // currentIndexStream handles currentSong.
     } catch (error) {
       emit(
         state.copyWith(
@@ -218,12 +258,17 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
       );
     }
   }
+
+  // ============================================================
+  // SEEK
+  // ============================================================
 
   Future<void> _onSeekSong(SeekSong event, Emitter<PlayerState> emit) async {
     try {
       await _audioService.seek(event.position);
 
-      emit(state.copyWith(position: event.position));
+      // positionStream is the source of truth.
+      // Don't manually update state here.
     } catch (error) {
       emit(
         state.copyWith(
@@ -234,9 +279,13 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
     }
   }
 
+  // ============================================================
+  // VOLUME
+  // ============================================================
+
   Future<void> _onSetVolume(SetVolume event, Emitter<PlayerState> emit) async {
     try {
-      final volume = event.volume.clamp(0.0, 1.0);
+      final volume = event.volume.clamp(0.0, 1.0).toDouble();
 
       await _audioService.setVolume(volume);
 
@@ -251,12 +300,20 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
     }
   }
 
+  // ============================================================
+  // POSITION CHANGED
+  // ============================================================
+
   void _onPlayerPositionChanged(
     PlayerPositionChanged event,
     Emitter<PlayerState> emit,
   ) {
     emit(state.copyWith(position: event.position));
   }
+
+  // ============================================================
+  // DURATION CHANGED
+  // ============================================================
 
   void _onPlayerDurationChanged(
     PlayerDurationChanged event,
@@ -265,10 +322,48 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
     emit(state.copyWith(duration: event.duration));
   }
 
+  // ============================================================
+  // CURRENT INDEX CHANGED
+  // ============================================================
+
+  void _onCurrentIndexChanged(
+    CurrentIndexChanged event,
+    Emitter<PlayerState> emit,
+  ) {
+    final index = event.index;
+
+    if (index == null) {
+      return;
+    }
+
+    if (index < 0 || index >= state.playlist.length) {
+      return;
+    }
+
+    final song = state.playlist[index];
+
+    // IMPORTANT:
+    //
+    // Only update currentSong.
+    //
+    // DO NOT reset:
+    //   position
+    //   duration
+    //
+    // This keeps the existing working slider/duration
+    // behaviour untouched.
+    emit(state.copyWith(currentSong: song, clearError: true));
+  }
+
+  // ============================================================
+  // PLAYER STATE CHANGED
+  // ============================================================
+
   void _onAudioPlayerStateChanged(
     AudioPlayerStateChanged event,
     Emitter<PlayerState> emit,
   ) {
+    // Song completed.
     if (event.processingState == just_audio.ProcessingState.completed) {
       add(const NextSong());
       return;
@@ -278,6 +373,7 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
         ? PlayerStatus.playing
         : PlayerStatus.paused;
 
+    // Avoid unnecessary rebuilds.
     if (state.status == newStatus) {
       return;
     }
@@ -285,11 +381,16 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
     emit(state.copyWith(status: newStatus));
   }
 
+  // ============================================================
+  // CLOSE
+  // ============================================================
+
   @override
   Future<void> close() async {
     await _positionSubscription?.cancel();
     await _durationSubscription?.cancel();
     await _playerStateSubscription?.cancel();
+    await _currentIndexSubscription?.cancel();
 
     await _audioService.dispose();
 
