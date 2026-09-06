@@ -100,13 +100,11 @@ class NowPlaying extends StatelessWidget {
             children: [
               IconButton(
                 iconSize: 32,
-                onPressed: state.status == PlayerStatus.loading
-                    ? null
-                    : () {
-                        context.read<PlayerBloc>().add(
-                          const PreviousSong(),
-                        );
-                      },
+                onPressed: () {
+                  context.read<PlayerBloc>().add(
+                    const PreviousSong(),
+                  );
+                },
                 icon: const Icon(Icons.skip_previous),
               ),
 
@@ -114,39 +112,27 @@ class NowPlaying extends StatelessWidget {
 
               IconButton(
                 iconSize: 52,
-                onPressed: state.status == PlayerStatus.loading
-                    ? null
-                    : () {
-                        context.read<PlayerBloc>().add(
-                          const TogglePlayPause(),
-                        );
-                      },
-                icon: state.status == PlayerStatus.loading
-                    ? const SizedBox(
-                        width: 40,
-                        height: 40,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 3,
-                        ),
-                      )
-                    : Icon(
-                        state.isPlaying
-                            ? Icons.pause_circle_filled
-                            : Icons.play_circle_filled,
-                      ),
+                onPressed: () {
+                  context.read<PlayerBloc>().add(
+                    const TogglePlayPause(),
+                  );
+                },
+                icon: Icon(
+                  state.isPlaying
+                      ? Icons.pause_circle_filled
+                      : Icons.play_circle_filled,
+                ),
               ),
 
               const SizedBox(width: 20),
 
               IconButton(
                 iconSize: 32,
-                onPressed: state.status == PlayerStatus.loading
-                    ? null
-                    : () {
-                        context.read<PlayerBloc>().add(
-                          const NextSong(),
-                        );
-                      },
+                onPressed: () {
+                  context.read<PlayerBloc>().add(
+                    const NextSong(),
+                  );
+                },
                 icon: const Icon(Icons.skip_next),
               ),
             ],

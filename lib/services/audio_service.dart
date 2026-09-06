@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:just_audio/just_audio.dart';
 
 import '../models/song.dart';
@@ -6,6 +7,46 @@ class AudioService {
   final AudioPlayer _player = AudioPlayer();
 
   List<Song> _playlist = [];
+
+  // Custom index tracker
+  int? _currentIndexInternal;
+  final StreamController<int?> _currentIndexController =
+      StreamController<int?>.broadcast();
+
+  // The dynamically managed audio source
+  ConcatenatingAudioSource? _currentPlaylistSource;
+
+  int _relativeIndex =
+      0; // Tracks which song in the 3-song window is currently playing
+  StreamSubscription? _justAudioIndexSub;
+
+  // LOCK: Prevents race condition when updating the sliding window.
+  // When true, index change events from just_audio are ignored.
+  bool _isUpdatingWindow = false;
+
+  AudioService() {
+    // Listen to just_audio's internal index changes
+    _justAudioIndexSub = _player.currentIndexStream.listen(
+      (index) {
+        // CRITICAL: Ignore index changes while we are updating the window.
+        // Without this, insert/remove operations cause fake index shifts
+        // that trigger an infinite loop.
+        if (_isUpdatingWindow) return;
+
+        if (index != null && _currentPlaylistSource != null) {
+          if (index > _relativeIndex) {
+            // Moved forward
+            _handleIndexChange(isNext: true);
+          } else if (index < _relativeIndex) {
+            // Moved backward
+            _handleIndexChange(isNext: false);
+          }
+        }
+      },
+      onError: (Object e) {},
+      cancelOnError: false,
+    );
+  }
 
   // ============================================================
   // STREAMS
@@ -17,7 +58,7 @@ class AudioService {
 
   Stream<PlayerState> get playerStateStream => _player.playerStateStream;
 
-  Stream<int?> get currentIndexStream => _player.currentIndexStream;
+  Stream<int?> get currentIndexStream => _currentIndexController.stream;
 
   // ============================================================
   // PLAYER INFO
@@ -29,7 +70,7 @@ class AudioService {
       _player.processingState == ProcessingState.loading ||
       _player.processingState == ProcessingState.buffering;
 
-  int? get currentIndex => _player.currentIndex;
+  int? get currentIndex => _currentIndexInternal;
 
   Duration get position => _player.position;
 
@@ -44,11 +85,9 @@ class AudioService {
   // ============================================================
 
   Song? get currentSong {
-    final index = _player.currentIndex;
+    final index = _currentIndexInternal;
 
-    if (index == null ||
-        index < 0 ||
-        index >= _playlist.length) {
+    if (index == null || index < 0 || index >= _playlist.length) {
       return null;
     }
 
@@ -56,77 +95,113 @@ class AudioService {
   }
 
   // ============================================================
-  // SET PLAYLIST
+  // HELPER: CREATE AUDIO SOURCE
+  // ============================================================
+
+  AudioSource _createSource(Song song) {
+    final audioUrl = song.audioUrl;
+
+    if (audioUrl.startsWith('asset://')) {
+      return AudioSource.asset(
+        audioUrl.replaceFirst('asset://', ''),
+        tag: song.id,
+      );
+    }
+
+    if (audioUrl.startsWith('http://') || audioUrl.startsWith('https://')) {
+      return AudioSource.uri(Uri.parse(audioUrl), tag: song.id);
+    }
+
+    throw ArgumentError('Unsupported audio source: $audioUrl');
+  }
+
+  // ============================================================
+  // SET PLAYLIST (NO PRELOADING ALL SONGS)
   // ============================================================
 
   Future<void> setPlaylist(List<Song> songs) async {
     _playlist = List.unmodifiable(songs);
 
-    if (_playlist.isEmpty) {
-      await _player.stop();
-      return;
-    }
+    // Always reset stale state from the previous playlist.
+    _currentPlaylistSource = null;
+    _setCurrentIndex(null);
 
-    final sources = <AudioSource>[];
-
-    for (final song in _playlist) {
-      final audioUrl = song.audioUrl;
-
-      // --------------------------------------------------------
-      // Local Flutter asset
-      // --------------------------------------------------------
-
-      if (audioUrl.startsWith('asset://')) {
-        final assetPath =
-            audioUrl.replaceFirst('asset://', '');
-
-        sources.add(
-          AudioSource.asset(
-            assetPath,
-            tag: song.id,
-          ),
-        );
-
-        continue;
-      }
-
-      // --------------------------------------------------------
-      // Remote URL
-      // --------------------------------------------------------
-
-      if (audioUrl.startsWith('http://') ||
-          audioUrl.startsWith('https://')) {
-        sources.add(
-          AudioSource.uri(
-            Uri.parse(audioUrl),
-            tag: song.id,
-          ),
-        );
-
-        continue;
-      }
-
-      throw ArgumentError(
-        'Unsupported audio source: $audioUrl',
-      );
-    }
-
-    // Stop previous playback before replacing playlist.
     await _player.stop();
-
-    // Load playlist.
-    //
-    // Don't call play() here.
-    await _player.setAudioSources(
-      sources,
-      initialIndex: 0,
-      initialPosition: Duration.zero,
-     
-    );
   }
 
   // ============================================================
-  // PLAY SONG
+  // INTERNAL: HANDLE INDEX CHANGE
+  // ============================================================
+
+  Future<void> _handleIndexChange({required bool isNext}) async {
+    if (_currentIndexInternal == null || _currentPlaylistSource == null) return;
+
+    // LOCK the window so index stream events are ignored
+    _isUpdatingWindow = true;
+
+    try {
+      if (isNext) {
+        final newIndex = _currentIndexInternal! + 1;
+        if (newIndex >= _playlist.length) return; // End of playlist
+
+        _setCurrentIndex(newIndex);
+
+        // If we had a previous song in the window, remove it (index 0).
+        if (_relativeIndex > 0) {
+          await _currentPlaylistSource!.removeAt(0);
+          _relativeIndex = 1; // Our new relative index (it shifted down)
+        } else {
+          // We had no previous song, so now the song at 0 is our previous song
+          _relativeIndex = 1;
+        }
+
+        // Preload the new next song if available
+        final nextPreloadIndex = newIndex + 1;
+        if (nextPreloadIndex < _playlist.length) {
+          final preloadSource = _createSource(_playlist[nextPreloadIndex]);
+          await _currentPlaylistSource!.add(preloadSource);
+        }
+      } else {
+        // Moved Backward
+        final newIndex = _currentIndexInternal! - 1;
+        if (newIndex < 0) return; // Start of playlist
+
+        _setCurrentIndex(newIndex);
+
+        // If we had a next song in the window, remove it.
+        if (_currentPlaylistSource!.length > _relativeIndex + 1) {
+          await _currentPlaylistSource!.removeAt(
+            _currentPlaylistSource!.length - 1,
+          );
+        }
+
+        // Preload the new previous song if available
+        final prevPreloadIndex = newIndex - 1;
+        if (prevPreloadIndex >= 0) {
+          final preloadSource = _createSource(_playlist[prevPreloadIndex]);
+          await _currentPlaylistSource!.insert(0, preloadSource);
+          _relativeIndex =
+              1; // Because we inserted at 0, our current song shifted to 1
+        } else {
+          _relativeIndex = 0; // No previous song, so we are at index 0
+        }
+      }
+    } finally {
+      // UNLOCK the window — always unlock, even if an error occurs
+      _isUpdatingWindow = false;
+    }
+  }
+
+  // ============================================================
+  // INTERNAL: SET CURRENT INDEX
+  // ============================================================
+  void _setCurrentIndex(int? index) {
+    _currentIndexInternal = index;
+    _currentIndexController.add(index);
+  }
+
+  // ============================================================
+  // PLAY SONG (JIT LOAD)
   // ============================================================
 
   Future<void> playSongAt(int index) async {
@@ -134,17 +209,68 @@ class AudioService {
       return;
     }
 
-    // If the same song is selected again,
-    // restart it from the beginning.
-    if (_player.currentIndex == index) {
-      await _player.seek(Duration.zero);
-    } else {
-      await _player.seek(
-        Duration.zero,
-        index: index,
-      );
+    if (_currentIndexInternal == index) {
+      if (_player.processingState == ProcessingState.completed) {
+        // Player is in completed state — seek+play alone won't work.
+        // Build a FRESH source so just_audio re-emits duration properly.
+        final freshSources = <AudioSource>[];
+        int freshInitialIndex = 0;
+        if (index - 1 >= 0) {
+          freshSources.add(_createSource(_playlist[index - 1]));
+          freshInitialIndex = 1;
+        }
+        freshSources.add(_createSource(_playlist[index]));
+        if (index + 1 < _playlist.length) {
+          freshSources.add(_createSource(_playlist[index + 1]));
+        }
+        final freshSource = ConcatenatingAudioSource(children: freshSources);
+        _relativeIndex = freshInitialIndex;
+        await _player.setAudioSource(
+          freshSource,
+          initialIndex: freshInitialIndex,
+          initialPosition: Duration.zero,
+        );
+        _currentPlaylistSource = freshSource;
+      } else {
+        await _player.seek(Duration.zero);
+      }
+      await _player.play();
+      return;
     }
 
+    _currentPlaylistSource = null;
+    _setCurrentIndex(index);
+
+    final sources = <AudioSource>[];
+    int initialIndex = 0;
+
+    // Previous
+    if (index - 1 >= 0) {
+      sources.add(_createSource(_playlist[index - 1]));
+      initialIndex = 1;
+    }
+
+    // Current
+    sources.add(_createSource(_playlist[index]));
+
+    // Next
+    if (index + 1 < _playlist.length) {
+      sources.add(_createSource(_playlist[index + 1]));
+    }
+
+    final newSource = ConcatenatingAudioSource(children: sources);
+
+    await _player.stop();
+
+    _relativeIndex = initialIndex;
+
+    await _player.setAudioSource(
+      newSource,
+      initialIndex: initialIndex,
+      initialPosition: Duration.zero,
+    );
+
+    _currentPlaylistSource = newSource;
     await _player.play();
   }
 
@@ -153,10 +279,7 @@ class AudioService {
   // ============================================================
 
   Future<void> play() async {
-    if (_playlist.isEmpty) {
-      return;
-    }
-
+    if (_playlist.isEmpty) return;
     await _player.play();
   }
 
@@ -173,20 +296,19 @@ class AudioService {
   // ============================================================
 
   Future<void> next() async {
-    if (_playlist.isEmpty) {
-      return;
-    }
+    if (_playlist.isEmpty || _currentIndexInternal == null) return;
 
-    if (_player.hasNext) {
-      await _player.seekToNext();
+    final nextIndex = _currentIndexInternal! + 1;
+
+    if (nextIndex < _playlist.length) {
+      if (_player.hasNext) {
+        await _player.seekToNext();
+      } else {
+        await playSongAt(nextIndex);
+      }
     } else {
-      await _player.seek(
-        Duration.zero,
-        index: 0,
-      );
+      await playSongAt(0);
     }
-
-    await _player.play();
   }
 
   // ============================================================
@@ -194,20 +316,19 @@ class AudioService {
   // ============================================================
 
   Future<void> previous() async {
-    if (_playlist.isEmpty) {
-      return;
-    }
+    if (_playlist.isEmpty || _currentIndexInternal == null) return;
 
-    if (_player.hasPrevious) {
-      await _player.seekToPrevious();
+    final prevIndex = _currentIndexInternal! - 1;
+
+    if (prevIndex >= 0) {
+      if (_player.hasPrevious) {
+        await _player.seekToPrevious();
+      } else {
+        await playSongAt(prevIndex);
+      }
     } else {
-      await _player.seek(
-        Duration.zero,
-        index: _playlist.length - 1,
-      );
+      await playSongAt(_playlist.length - 1);
     }
-
-    await _player.play();
   }
 
   // ============================================================
@@ -217,22 +338,14 @@ class AudioService {
   Future<void> seek(Duration position) async {
     final duration = _player.duration;
 
-    // If duration isn't known yet, let just_audio handle
-    // the seek rather than blocking it from the Bloc.
     if (duration == null) {
       await _player.seek(position);
       return;
     }
 
     var safePosition = position;
-
-    if (safePosition < Duration.zero) {
-      safePosition = Duration.zero;
-    }
-
-    if (safePosition > duration) {
-      safePosition = duration;
-    }
+    if (safePosition < Duration.zero) safePosition = Duration.zero;
+    if (safePosition > duration) safePosition = duration;
 
     await _player.seek(safePosition);
   }
@@ -242,9 +355,7 @@ class AudioService {
   // ============================================================
 
   Future<void> setVolume(double volume) async {
-    final safeVolume =
-        volume.clamp(0.0, 1.0).toDouble();
-
+    final safeVolume = volume.clamp(0.0, 1.0).toDouble();
     await _player.setVolume(safeVolume);
   }
 
@@ -253,6 +364,8 @@ class AudioService {
   // ============================================================
 
   Future<void> dispose() async {
+    await _justAudioIndexSub?.cancel();
+    await _currentIndexController.close();
     await _player.dispose();
   }
 }

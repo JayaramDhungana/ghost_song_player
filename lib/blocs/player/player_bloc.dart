@@ -42,36 +42,40 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
   // ============================================================
 
   void _listenToAudioPlayer() {
-    _positionSubscription = _audioService.positionStream.listen((position) {
-      add(PlayerPositionChanged(position));
-    });
+    _positionSubscription = _audioService.positionStream.listen(
+      (position) => add(PlayerPositionChanged(position)),
+      onError: (Object e) {},
+      cancelOnError: false,
+    );
 
-    _durationSubscription = _audioService.durationStream.listen((duration) {
-      if (duration == null) return;
+    _durationSubscription = _audioService.durationStream.listen(
+      (duration) {
+        if (duration != null) {
+          add(PlayerDurationChanged(duration));
+        }
+      },
+      onError: (Object e) {},
+      cancelOnError: false,
+    );
 
-      add(PlayerDurationChanged(duration));
-    });
+    _playerStateSubscription = _audioService.playerStateStream.listen(
+      (playerState) {
+        add(
+          AudioPlayerStateChanged(
+            isPlaying: playerState.playing,
+            processingState: playerState.processingState,
+          ),
+        );
+      },
+      onError: (Object e) {},
+      cancelOnError: false,
+    );
 
-    _playerStateSubscription = _audioService.playerStateStream.listen((
-      playerState,
-    ) {
-      add(
-        AudioPlayerStateChanged(
-          isPlaying: playerState.playing,
-          processingState: playerState.processingState,
-        ),
-      );
-    });
-
-    // IMPORTANT:
-    // Only listen to index changes.
-    //
-    // We do NOT reset position/duration here.
-    _currentIndexSubscription = _audioService.currentIndexStream.listen((
-      index,
-    ) {
-      add(CurrentIndexChanged(index));
-    });
+    _currentIndexSubscription = _audioService.currentIndexStream.listen(
+      (index) => add(CurrentIndexChanged(index)),
+      onError: (Object e) {},
+      cancelOnError: false,
+    );
   }
 
   // ============================================================
@@ -117,7 +121,16 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
 
   Future<void> _onPlaySong(PlaySong event, Emitter<PlayerState> emit) async {
     try {
-      final index = state.playlist.indexWhere(
+      if (event.playlist != null) {
+        await _audioService.setPlaylist(event.playlist!);
+        // Only update the playlist in state — do NOT clearCurrentSong here.
+        // Clearing it causes the MiniPlayer to vanish momentarily because
+        // currentSong becomes null before the new song starts loading.
+        emit(state.copyWith(playlist: event.playlist!, clearError: true));
+      }
+
+      final playlistToSearch = event.playlist ?? state.playlist;
+      final index = playlistToSearch.indexWhere(
         (song) => song.id == event.song.id,
       );
 
@@ -125,16 +138,8 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
         return;
       }
 
-      // Same song is already selected.
-      // Don't reset duration — otherwise slider becomes inactive.
-      if (_audioService.currentIndex == index) {
-        await _audioService.seek(Duration.zero);
-        await _audioService.play();
-
-        return;
-      }
-
-      // Different song selected.
+      // Set current song immediately so UI shows the correct song title
+      // even while audio is still loading.
       emit(
         state.copyWith(
           status: PlayerStatus.loading,
@@ -213,9 +218,21 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
     }
 
     try {
-      emit(state.copyWith(status: PlayerStatus.loading, clearError: true));
+      emit(
+        state.copyWith(
+          status: PlayerStatus.loading,
+          position: Duration.zero,
+          duration: Duration.zero,
+          clearError: true,
+        ),
+      );
 
       await _audioService.next();
+
+      final currentDuration = _audioService.duration;
+      if (currentDuration != null && currentDuration != Duration.zero) {
+        emit(state.copyWith(duration: currentDuration));
+      }
 
       // DO NOT manually update currentSong here.
       //
@@ -244,9 +261,21 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
     }
 
     try {
-      emit(state.copyWith(status: PlayerStatus.loading, clearError: true));
+      emit(
+        state.copyWith(
+          status: PlayerStatus.loading,
+          position: Duration.zero,
+          duration: Duration.zero,
+          clearError: true,
+        ),
+      );
 
       await _audioService.previous();
+
+      final currentDuration = _audioService.duration;
+      if (currentDuration != null && currentDuration != Duration.zero) {
+        emit(state.copyWith(duration: currentDuration));
+      }
 
       // currentIndexStream handles currentSong.
     } catch (error) {
@@ -369,9 +398,30 @@ class PlayerBloc extends Bloc<PlayerEvent, PlayerState> {
       return;
     }
 
-    final newStatus = event.isPlaying
-        ? PlayerStatus.playing
-        : PlayerStatus.paused;
+    PlayerStatus newStatus;
+
+    if (event.processingState == just_audio.ProcessingState.loading) {
+      newStatus = PlayerStatus.loading;
+    } else if (event.processingState == just_audio.ProcessingState.buffering) {
+      // If we are already manually loading a song, keep it loading.
+      // But if we are seeking (buffering while playing), stay playing/paused.
+      if (state.status == PlayerStatus.loading) {
+        newStatus = PlayerStatus.loading;
+      } else {
+        newStatus = event.isPlaying
+            ? PlayerStatus.playing
+            : PlayerStatus.paused;
+      }
+    } else if (event.processingState == just_audio.ProcessingState.ready) {
+      newStatus = event.isPlaying ? PlayerStatus.playing : PlayerStatus.paused;
+    } else {
+      // Idle or other states. Don't overwrite our manual 'loading' state
+      // if we just started loading a song.
+      if (state.status == PlayerStatus.loading) {
+        return;
+      }
+      newStatus = event.isPlaying ? PlayerStatus.playing : PlayerStatus.paused;
+    }
 
     // Avoid unnecessary rebuilds.
     if (state.status == newStatus) {

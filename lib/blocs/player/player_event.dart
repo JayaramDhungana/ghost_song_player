@@ -14,8 +14,9 @@ class LoadPlaylist extends PlayerEvent {
 
 class PlaySong extends PlayerEvent {
   final Song song;
+  final List<Song>? playlist;
 
-  const PlaySong(this.song);
+  const PlaySong(this.song, {this.playlist});
 }
 
 class TogglePlayPause extends PlayerEvent {
