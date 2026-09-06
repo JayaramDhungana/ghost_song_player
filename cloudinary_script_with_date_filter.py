@@ -1,18 +1,19 @@
-
 import cloudinary
 import cloudinary.api
 from pathlib import Path
 import re
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 
 # ============================================================
 #                 CLOUDINARY SETTINGS
 # ============================================================
-CLOUD_NAME = "gl3ydn8a"
-
-API_KEY = "847949698218993"
-
-API_SECRET = "CaEvopdN1pxlG43GVZfKNAjwRH4"
+CLOUD_NAME = os.getenv("CLOUD_NAME")
+API_KEY = os.getenv("API_KEY")
+API_SECRET = os.getenv("API_SECRET")
 
 
 # ============================================================
@@ -20,10 +21,10 @@ API_SECRET = "CaEvopdN1pxlG43GVZfKNAjwRH4"
 # ============================================================
 
 # Dart ID कहाँबाट सुरु गर्ने?
-START_ID = 14
+START_ID = 126
 
 # तपाईंको Dart मा यही folder राखिनेछ
-DART_FOLDER = "Movie songs"
+DART_FOLDER = "Pop"
 
 
 # यदि Cloudinary मा songs कुनै एउटै वास्तविक folder भित्र छन् भने
@@ -33,11 +34,41 @@ DART_FOLDER = "Movie songs"
 # ASSET_FOLDER = "songs"
 #
 # सबै ठाउँका MP3 खोज्ने हो भने खाली राख्नुहोस्:
-ASSET_FOLDER = ""
+ASSET_FOLDER = "pop"
+
+
+# ============================================================
+#                 DATE FILTER
+# ============================================================
+
+# खाली राख्दा date filter हुँदैन।
+#
+# एउटै दिनका songs मात्र:
+# FROM_DATE = "2026-09-06"
+# TO_DATE = "2026-09-06"
+#
+# Date range:
+# FROM_DATE = "2026-09-01"
+# TO_DATE = "2026-09-06"
+#
+# September 1 पछि upload भएका:
+# FROM_DATE = "2026-09-01"
+# TO_DATE = ""
+#
+# September 6 सम्म upload भएका:
+# FROM_DATE = ""
+# TO_DATE = "2026-09-06"
+#
+# सबै songs:
+# FROM_DATE = ""
+# TO_DATE = ""
+
+FROM_DATE = ""
+TO_DATE = ""
 
 
 # Output file
-OUTPUT_FILE = "songs.dart"
+OUTPUT_FILE = "pop_songs.dart"
 
 
 # ============================================================
@@ -266,6 +297,31 @@ def get_all_mp3():
         expression += (
             f' AND asset_folder:"{ASSET_FOLDER}"'
         )
+
+
+    # ========================================================
+    # DATE FILTER
+    # ========================================================
+
+    if FROM_DATE and TO_DATE:
+
+        expression += (
+            f' AND created_at:[{FROM_DATE}T00:00:00Z '
+            f'TO {TO_DATE}T23:59:59Z]'
+        )
+
+    elif FROM_DATE:
+
+        expression += (
+            f' AND created_at:[{FROM_DATE}T00:00:00Z TO *]'
+        )
+
+    elif TO_DATE:
+
+        expression += (
+            f' AND created_at:[* TO {TO_DATE}T23:59:59Z]'
+        )
+
 
     print("Search:")
     print(expression)

@@ -55,7 +55,10 @@ class _PlayerViewState extends State<PlayerView> {
           child: BlocBuilder<LibraryBloc, LibraryState>(
             builder: (ctx, libState) {
               return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 16,
+                ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -153,7 +156,11 @@ class _PlayerViewState extends State<PlayerView> {
         ),
       ),
       trailing: isSelected
-          ? Icon(Icons.check_circle, color: Theme.of(context).colorScheme.primary, size: 20)
+          ? Icon(
+              Icons.check_circle,
+              color: Theme.of(context).colorScheme.primary,
+              size: 20,
+            )
           : null,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       onTap: () {
@@ -218,7 +225,10 @@ class _PlayerViewState extends State<PlayerView> {
                                       ),
                                       const SizedBox(width: 8),
                                       IconButton(
-                                        icon: const Icon(Icons.settings, size: 22),
+                                        icon: const Icon(
+                                          Icons.settings,
+                                          size: 22,
+                                        ),
                                         onPressed: () => _openSettings(context),
                                         tooltip: 'Settings',
                                       ),
@@ -255,21 +265,37 @@ class _PlayerViewState extends State<PlayerView> {
                                 child: Column(
                                   children: [
                                     const SizedBox(height: 60),
+                                  
                                     Row(
-                                      mainAxisAlignment: MainAxisAlignment.center,
                                       children: [
-                                        const Text(
-                                          'JD MEDIA PLAYER',
-                                          style: TextStyle(
-                                            fontSize: 28,
-                                            fontWeight: FontWeight.bold,
+                                        // Left side balance
+                                        const SizedBox(width: 48),
+
+                                        // Exact center title
+                                        const Expanded(
+                                          child: Center(
+                                            child: Text(
+                                              'JD MEDIA PLAYER',
+                                              style: TextStyle(
+                                                fontSize: 28,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
                                           ),
                                         ),
-                                        const SizedBox(width: 8),
-                                        IconButton(
-                                          icon: const Icon(Icons.settings, size: 24),
-                                          onPressed: () => _openSettings(context),
-                                          tooltip: 'Settings',
+
+                                        // Right side settings
+                                        SizedBox(
+                                          width: 48,
+                                          child: IconButton(
+                                            icon: const Icon(
+                                              Icons.settings,
+                                              size: 24,
+                                            ),
+                                            onPressed: () =>
+                                                _openSettings(context),
+                                            tooltip: 'Settings',
+                                          ),
                                         ),
                                       ],
                                     ),
