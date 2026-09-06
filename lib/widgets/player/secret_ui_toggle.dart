@@ -109,23 +109,23 @@ class _SecretUiToggleState extends State<SecretUiToggle> {
     _gestureStart = null;
   }
 
-  void _startGesture(DragStartDetails details) {
+  void _startGesture(Offset localPosition) {
     if (!_isTouchDevice) {
       return;
     }
 
-    _startPoint = details.localPosition;
-    _lastPoint = details.localPosition;
+    _startPoint = localPosition;
+    _lastPoint = localPosition;
     _validSwipe = false;
     _gestureStart = DateTime.now();
   }
 
-  void _updateGesture(DragUpdateDetails details) {
+  void _updateGesture(Offset localPosition) {
     if (!_isTouchDevice || _startPoint == null) {
       return;
     }
 
-    final current = details.localPosition;
+    final current = localPosition;
 
     final dx = current.dx - _startPoint!.dx;
     final dy = current.dy - _startPoint!.dy;
@@ -138,7 +138,7 @@ class _SecretUiToggleState extends State<SecretUiToggle> {
     _lastPoint = current;
   }
 
-  void _endGesture(DragEndDetails details) {
+  void _endGesture() {
     if (!_isTouchDevice ||
         !_validSwipe ||
         _startPoint == null ||
@@ -172,9 +172,21 @@ class _SecretUiToggleState extends State<SecretUiToggle> {
     return GestureDetector(
       behavior: HitTestBehavior.translucent,
 
-      onPanStart: _startGesture,
-      onPanUpdate: _updateGesture,
-      onPanEnd: _endGesture,
+      onScaleStart: (details) {
+        if (details.pointerCount == 2) {
+          _startGesture(details.localFocalPoint);
+        } else {
+          _resetGesture();
+        }
+      },
+      onScaleUpdate: (details) {
+        if (details.pointerCount == 2) {
+          _updateGesture(details.localFocalPoint);
+        }
+      },
+      onScaleEnd: (details) {
+        _endGesture();
+      },
 
       child: ValueListenableBuilder<bool>(
         valueListenable: widget.visibility,
