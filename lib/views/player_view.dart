@@ -236,28 +236,66 @@ class _PlayerViewState extends State<PlayerView> {
                               Column(
                                 children: [
                                   const SizedBox(height: 20),
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      const Text(
-                                        'JD MEDIA PLAYER',
-                                        style: TextStyle(
-                                          fontSize: 24,
-                                          fontWeight: FontWeight.bold,
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                                    child: Row(
+                                      children: [
+                                        const SizedBox(width: 44),
+                                        Expanded(
+                                          child: Center(
+                                            child: ShaderMask(
+                                              shaderCallback: (bounds) => const LinearGradient(
+                                                colors: [
+                                                  Colors.white,
+                                                  Color(0xFFE0E7FF),
+                                                  Color(0xFFC084FC),
+                                                ],
+                                                begin: Alignment.topLeft,
+                                                end: Alignment.bottomRight,
+                                              ).createShader(bounds),
+                                              child: const Text(
+                                                'JD MEDIA PLAYER',
+                                                style: TextStyle(
+                                                  fontSize: 22,
+                                                  fontWeight: FontWeight.w900,
+                                                  letterSpacing: 2.2,
+                                                  color: Colors.white,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
                                         ),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      IconButton(
-                                        icon: const Icon(
-                                          Icons.settings,
-                                          size: 22,
+                                        Container(
+                                          width: 44,
+                                          height: 44,
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFF161524).withValues(alpha: 0.8),
+                                            shape: BoxShape.circle,
+                                            border: Border.all(
+                                              color: Colors.white.withValues(alpha: 0.1),
+                                              width: 1.2,
+                                            ),
+                                            boxShadow: [
+                                              BoxShadow(
+                                                color: Colors.black.withValues(alpha: 0.3),
+                                                blurRadius: 10,
+                                              ),
+                                            ],
+                                          ),
+                                          child: IconButton(
+                                            icon: const Icon(
+                                              Icons.settings_rounded,
+                                              size: 20,
+                                              color: Colors.white70,
+                                            ),
+                                            onPressed: () => _openSettings(context),
+                                            tooltip: 'Settings',
+                                          ),
                                         ),
-                                        onPressed: () => _openSettings(context),
-                                        tooltip: 'Settings',
-                                      ),
-                                    ],
+                                      ],
+                                    ),
                                   ),
-                                  const SizedBox(height: 12),
+                                  const SizedBox(height: 14),
                                   const Expanded(child: MusicLibrary()),
                                   if (currentSong != null)
                                     MiniPlayer(
@@ -287,40 +325,65 @@ class _PlayerViewState extends State<PlayerView> {
                                 width: 600,
                                 child: Column(
                                   children: [
-                                    const SizedBox(height: 60),
-                                  
-                                    Row(
-                                      children: [
-                                        // Left side balance
-                                        const SizedBox(width: 48),
-
-                                        // Exact center title
-                                        const Expanded(
-                                          child: Center(
-                                            child: Text(
-                                              'JD MEDIA PLAYER',
-                                              style: TextStyle(
-                                                fontSize: 28,
-                                                fontWeight: FontWeight.bold,
+                                    const SizedBox(height: 50),
+                                    Padding(
+                                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                                      child: Row(
+                                        children: [
+                                          const SizedBox(width: 48),
+                                          Expanded(
+                                            child: Center(
+                                              child: ShaderMask(
+                                                shaderCallback: (bounds) => const LinearGradient(
+                                                  colors: [
+                                                    Colors.white,
+                                                    Color(0xFFE0E7FF),
+                                                    Color(0xFFC084FC),
+                                                  ],
+                                                  begin: Alignment.topLeft,
+                                                  end: Alignment.bottomRight,
+                                                ).createShader(bounds),
+                                                child: const Text(
+                                                  'JD MEDIA PLAYER',
+                                                  style: TextStyle(
+                                                    fontSize: 26,
+                                                    fontWeight: FontWeight.w900,
+                                                    letterSpacing: 2.8,
+                                                    color: Colors.white,
+                                                  ),
+                                                ),
                                               ),
                                             ),
                                           ),
-                                        ),
-
-                                        // Right side settings
-                                        SizedBox(
-                                          width: 48,
-                                          child: IconButton(
-                                            icon: const Icon(
-                                              Icons.settings,
-                                              size: 24,
+                                          Container(
+                                            width: 46,
+                                            height: 46,
+                                            decoration: BoxDecoration(
+                                              color: const Color(0xFF161524).withValues(alpha: 0.8),
+                                              shape: BoxShape.circle,
+                                              border: Border.all(
+                                                color: Colors.white.withValues(alpha: 0.1),
+                                                width: 1.2,
+                                              ),
+                                              boxShadow: [
+                                                BoxShadow(
+                                                  color: Colors.black.withValues(alpha: 0.3),
+                                                  blurRadius: 10,
+                                                ),
+                                              ],
                                             ),
-                                            onPressed: () =>
-                                                _openSettings(context),
-                                            tooltip: 'Settings',
+                                            child: IconButton(
+                                              icon: const Icon(
+                                                Icons.settings_rounded,
+                                                size: 22,
+                                                color: Colors.white70,
+                                              ),
+                                              onPressed: () => _openSettings(context),
+                                              tooltip: 'Settings',
+                                            ),
                                           ),
-                                        ),
-                                      ],
+                                        ],
+                                      ),
                                     ),
                                     const SizedBox(height: 20),
                                     const Expanded(child: MusicLibrary()),

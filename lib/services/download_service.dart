@@ -50,7 +50,7 @@ class DownloadService {
   ) async {
     int totalSize = 0;
     int checked = 0;
-
+  
     // Chunking HEAD requests so we don't spam the server and get blocked
     for (int i = 0; i < songsToDownload.length; i += 10) {
       int end = (i + 10 < songsToDownload.length)

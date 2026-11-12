@@ -7,7 +7,9 @@ import '../blocs/library/library_state.dart';
 import '../blocs/player/player_bloc.dart';
 import '../blocs/player/player_event.dart';
 import '../blocs/player/player_state.dart';
+import '../models/folder_theme.dart';
 import '../models/song.dart';
+import '../widgets/library/song_tile.dart';
 import '../widgets/player/mini_player.dart';
 
 class FolderDetailView extends StatefulWidget {
@@ -96,28 +98,60 @@ class _FolderDetailViewState extends State<FolderDetailView> {
                             ],
                           ),
                         ),
-                        background: Hero(
-                          tag: 'folder_hero_${widget.folderName}',
-                          child: Container(
-                            decoration: const BoxDecoration(
-                              gradient: LinearGradient(
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                                colors: [
-                                  Color(0xFF24243E),
-                                  Color(0xFF302B63),
-                                  Color(0xFF0F0C29),
-                                ],
+                        background: Builder(
+                          builder: (context) {
+                            final theme = getFolderTheme(widget.folderName);
+                            return Hero(
+                              tag: 'folder_hero_${widget.folderName}',
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                    colors: theme.gradientColors,
+                                  ),
+                                ),
+                                child: Stack(
+                                  children: [
+                                    Positioned(
+                                      right: -20,
+                                      bottom: -20,
+                                      child: Icon(
+                                        theme.icon,
+                                        size: 160,
+                                        color: Colors.white.withValues(alpha: 0.1),
+                                      ),
+                                    ),
+                                    Center(
+                                      child: Container(
+                                        width: 72,
+                                        height: 72,
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          color: Colors.white.withValues(alpha: 0.16),
+                                          border: Border.all(
+                                            color: Colors.white.withValues(alpha: 0.25),
+                                            width: 1.5,
+                                          ),
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: theme.accentColor.withValues(alpha: 0.35),
+                                              blurRadius: 16,
+                                            ),
+                                          ],
+                                        ),
+                                        child: Icon(
+                                          theme.icon,
+                                          size: 38,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
-                            ),
-                            child: Center(
-                              child: Icon(
-                                Icons.folder_special_rounded,
-                                size: 80,
-                                color: Colors.white.withOpacity(0.3),
-                              ),
-                            ),
-                          ),
+                            );
+                          },
                         ),
                       ),
                     ),
@@ -181,62 +215,23 @@ class _FolderDetailViewState extends State<FolderDetailView> {
                         final song = sortedSongs[index];
                         final isCurrentSong = currentSong?.id == song.id;
 
-                        return ListTile(
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 24,
-                            vertical: 4,
-                          ),
-                          selected: isCurrentSong,
-                          leading: Container(
-                            width: 48,
-                            height: 48,
-                            decoration: BoxDecoration(
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.surfaceContainerHighest,
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Icon(
-                              isCurrentSong && playerState.isPlaying
-                                  ? Icons.equalizer
-                                  : Icons.music_note,
-                              color: isCurrentSong
-                                  ? Theme.of(context).colorScheme.primary
-                                  : null,
-                            ),
-                          ),
-                          title: Text(
-                            song.title,
-                            style: TextStyle(
-                              fontWeight: isCurrentSong
-                                  ? FontWeight.bold
-                                  : FontWeight.normal,
-                              color: isCurrentSong
-                                  ? Theme.of(context).colorScheme.primary
-                                  : null,
-                            ),
-                          ),
-                          subtitle: Text(song.artist ?? 'Unknown Artist'),
-                          trailing: IconButton(
-                            icon: Icon(
-                              isCurrentSong && playerState.isPlaying
-                                  ? Icons.pause_circle_filled_rounded
-                                  : Icons.play_circle_fill_rounded,
-                              size: 32,
-                            ),
-                            onPressed: () {
-                              final bloc = context.read<PlayerBloc>();
-
-                              if (isCurrentSong) {
-                                bloc.add(const TogglePlayPause());
-                              } else {
-                                bloc.add(PlaySong(song, playlist: sortedSongs));
-                              }
-                            },
-                          ),
+                        return SongTile(
+                          song: song,
+                          isCurrentSong: isCurrentSong,
+                          isPlaying: isCurrentSong && playerState.isPlaying,
                           onTap: () {
                             final bloc = context.read<PlayerBloc>();
                             if (!isCurrentSong) {
+                              bloc.add(PlaySong(song, playlist: sortedSongs));
+                            } else {
+                              bloc.add(const TogglePlayPause());
+                            }
+                          },
+                          onPlayPause: () {
+                            final bloc = context.read<PlayerBloc>();
+                            if (isCurrentSong) {
+                              bloc.add(const TogglePlayPause());
+                            } else {
                               bloc.add(PlaySong(song, playlist: sortedSongs));
                             }
                           },
