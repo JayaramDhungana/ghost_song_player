@@ -14,6 +14,7 @@ import '../../widgets/library/music_library.dart';
 import '../../widgets/player/mini_player.dart';
 import '../../widgets/player/now_playing.dart';
 import '../../widgets/player/secret_ui_toggle.dart';
+import 'download_view.dart';
 
 class PlayerView extends StatefulWidget {
   const PlayerView({super.key});
@@ -82,7 +83,29 @@ class _PlayerViewState extends State<PlayerView> {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 16),
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.purpleAccent.withOpacity(0.2),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.cloud_download, color: Colors.purpleAccent),
+                      ),
+                      title: const Text('Download All Songs', style: TextStyle(fontWeight: FontWeight.bold)),
+                      subtitle: const Text('Make library available offline', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                      trailing: const Icon(Icons.chevron_right),
+                      onTap: () {
+                        Navigator.pop(context); // Close bottom sheet
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => const DownloadView()),
+                        );
+                      },
+                    ),
+                    const Divider(height: 32),
                     const Text(
                       'SORT BY',
                       style: TextStyle(

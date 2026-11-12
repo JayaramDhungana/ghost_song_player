@@ -43,6 +43,11 @@ dependencies:
 
   # Icons
   cupertino_icons: ^1.0.8
+  just_audio_background: ^0.0.1-beta.17
+  dio: ^5.11.1
+  path_provider: ^2.1.6
+  just_audio_media_kit: ^2.1.0
+  media_kit_libs_windows_audio: ^1.0.9
 
 
 dev_dependencies:
@@ -69,8 +74,8 @@ flutter:
   uses-material-design: true
 
   # To add assets to your application, add an assets section, like this:
-  assets:
-    - assets/audio/
+  # assets:
+    # - assets/audio/
   #   - images/a_dot_ham.jpeg
 
   # An image asset can refer to one or more resolution-specific "variants", see

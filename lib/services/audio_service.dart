@@ -1,10 +1,14 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:just_audio/just_audio.dart';
+import 'package:just_audio_background/just_audio_background.dart';
 
 import '../models/song.dart';
+import 'download_service.dart';
 
 class AudioService {
   final AudioPlayer _player = AudioPlayer();
+  final DownloadService _downloadService = DownloadService();
 
   List<Song> _playlist = [];
 
@@ -98,18 +102,35 @@ class AudioService {
   // HELPER: CREATE AUDIO SOURCE
   // ============================================================
 
-  AudioSource _createSource(Song song) {
+  Future<AudioSource> _createSource(Song song) async {
     final audioUrl = song.audioUrl;
+    
+    final mediaItem = MediaItem(
+      id: song.id,
+      album: 'Ghost Player',
+      title: song.title,
+      artist: song.artist,
+      artUri: song.coverUrl != null && song.coverUrl!.startsWith('http')
+          ? Uri.parse(song.coverUrl!)
+          : null,
+    );
 
     if (audioUrl.startsWith('asset://')) {
       return AudioSource.asset(
         audioUrl.replaceFirst('asset://', ''),
-        tag: song.id,
+        tag: (!kIsWeb && defaultTargetPlatform == TargetPlatform.windows) ? null : mediaItem,
       );
     }
 
+    if (!kIsWeb) {
+      String? localPath = await _downloadService.getLocalSongPath(song.id);
+      if (localPath != null) {
+        return AudioSource.uri(Uri.file(localPath), tag: (defaultTargetPlatform == TargetPlatform.windows) ? null : mediaItem);
+      }
+    }
+
     if (audioUrl.startsWith('http://') || audioUrl.startsWith('https://')) {
-      return AudioSource.uri(Uri.parse(audioUrl), tag: song.id);
+      return AudioSource.uri(Uri.parse(audioUrl), tag: (!kIsWeb && defaultTargetPlatform == TargetPlatform.windows) ? null : mediaItem);
     }
 
     throw ArgumentError('Unsupported audio source: $audioUrl');
@@ -126,7 +147,9 @@ class AudioService {
     _currentPlaylistSource = null;
     _setCurrentIndex(null);
 
-    await _player.stop();
+    if (kIsWeb || defaultTargetPlatform != TargetPlatform.windows) {
+      await _player.stop();
+    }
   }
 
   // ============================================================
@@ -158,7 +181,7 @@ class AudioService {
         // Preload the new next song if available
         final nextPreloadIndex = newIndex + 1;
         if (nextPreloadIndex < _playlist.length) {
-          final preloadSource = _createSource(_playlist[nextPreloadIndex]);
+          final preloadSource = await _createSource(_playlist[nextPreloadIndex]);
           await _currentPlaylistSource!.add(preloadSource);
         }
       } else {
@@ -178,7 +201,7 @@ class AudioService {
         // Preload the new previous song if available
         final prevPreloadIndex = newIndex - 1;
         if (prevPreloadIndex >= 0) {
-          final preloadSource = _createSource(_playlist[prevPreloadIndex]);
+          final preloadSource = await _createSource(_playlist[prevPreloadIndex]);
           await _currentPlaylistSource!.insert(0, preloadSource);
           _relativeIndex =
               1; // Because we inserted at 0, our current song shifted to 1
@@ -211,26 +234,37 @@ class AudioService {
 
     if (_currentIndexInternal == index) {
       if (_player.processingState == ProcessingState.completed) {
-        // Player is in completed state — seek+play alone won't work.
-        // Build a FRESH source so just_audio re-emits duration properly.
-        final freshSources = <AudioSource>[];
-        int freshInitialIndex = 0;
-        if (index - 1 >= 0) {
-          freshSources.add(_createSource(_playlist[index - 1]));
-          freshInitialIndex = 1;
+        if (!kIsWeb && defaultTargetPlatform == TargetPlatform.windows) {
+          final source = await _createSource(_playlist[index]);
+          _relativeIndex = 0;
+          await _player.setAudioSource(source);
+        } else {
+          _isUpdatingWindow = true;
+          try {
+            // Player is in completed state — seek+play alone won't work on mobile/web.
+            // Build a FRESH source so just_audio re-emits duration properly.
+            final freshSources = <AudioSource>[];
+            int freshInitialIndex = 0;
+            if (index - 1 >= 0) {
+              freshSources.add(await _createSource(_playlist[index - 1]));
+              freshInitialIndex = 1;
+            }
+            freshSources.add(await _createSource(_playlist[index]));
+            if (index + 1 < _playlist.length) {
+              freshSources.add(await _createSource(_playlist[index + 1]));
+            }
+            final freshSource = ConcatenatingAudioSource(children: freshSources);
+            _relativeIndex = freshInitialIndex;
+            await _player.setAudioSource(
+              freshSource,
+              initialIndex: freshInitialIndex,
+              initialPosition: Duration.zero,
+            );
+            _currentPlaylistSource = freshSource;
+          } finally {
+            _isUpdatingWindow = false;
+          }
         }
-        freshSources.add(_createSource(_playlist[index]));
-        if (index + 1 < _playlist.length) {
-          freshSources.add(_createSource(_playlist[index + 1]));
-        }
-        final freshSource = ConcatenatingAudioSource(children: freshSources);
-        _relativeIndex = freshInitialIndex;
-        await _player.setAudioSource(
-          freshSource,
-          initialIndex: freshInitialIndex,
-          initialPosition: Duration.zero,
-        );
-        _currentPlaylistSource = freshSource;
       } else {
         await _player.seek(Duration.zero);
       }
@@ -241,36 +275,47 @@ class AudioService {
     _currentPlaylistSource = null;
     _setCurrentIndex(index);
 
-    final sources = <AudioSource>[];
-    int initialIndex = 0;
+    // just_audio_media_kit (Windows) does NOT support ConcatenatingAudioSource.
+    // Use a single AudioSource on Windows; use the sliding 3-song window elsewhere.
+    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.windows) {
+      final source = await _createSource(_playlist[index]);
+      _relativeIndex = 0;
+      await _player.setAudioSource(source);
+    } else {
+      _isUpdatingWindow = true;
+      try {
+        final sources = <AudioSource>[];
+        int initialIndex = 0;
 
-    // Previous
-    if (index - 1 >= 0) {
-      sources.add(_createSource(_playlist[index - 1]));
-      initialIndex = 1;
+        // Previous
+        if (index - 1 >= 0) {
+          sources.add(await _createSource(_playlist[index - 1]));
+          initialIndex = 1;
+        }
+
+        // Current
+        sources.add(await _createSource(_playlist[index]));
+
+        // Next
+        if (index + 1 < _playlist.length) {
+          sources.add(await _createSource(_playlist[index + 1]));
+        }
+
+        final newSource = ConcatenatingAudioSource(children: sources);
+        await _player.stop();
+        _relativeIndex = initialIndex;
+        _currentPlaylistSource = newSource;
+
+        await _player.setAudioSource(
+          newSource,
+          initialIndex: initialIndex,
+          initialPosition: Duration.zero,
+        );
+      } finally {
+        _isUpdatingWindow = false;
+      }
     }
 
-    // Current
-    sources.add(_createSource(_playlist[index]));
-
-    // Next
-    if (index + 1 < _playlist.length) {
-      sources.add(_createSource(_playlist[index + 1]));
-    }
-
-    final newSource = ConcatenatingAudioSource(children: sources);
-
-    await _player.stop();
-
-    _relativeIndex = initialIndex;
-
-    await _player.setAudioSource(
-      newSource,
-      initialIndex: initialIndex,
-      initialPosition: Duration.zero,
-    );
-
-    _currentPlaylistSource = newSource;
     await _player.play();
   }
 

@@ -48,3 +48,6 @@ app.*.map.json
 
 !build/web/
 .env
+
+# FVM Version Cache
+.fvm/
