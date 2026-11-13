@@ -21,10 +21,10 @@ API_SECRET = os.getenv("API_SECRET")
 # ============================================================
 
 # Dart ID कहाँबाट सुरु गर्ने?
-START_ID = 126
+START_ID = 133
 
 # तपाईंको Dart मा यही folder राखिनेछ
-DART_FOLDER = "Pop"
+DART_FOLDER = "Bhajan"
 
 
 # यदि Cloudinary मा songs कुनै एउटै वास्तविक folder भित्र छन् भने
@@ -34,7 +34,7 @@ DART_FOLDER = "Pop"
 # ASSET_FOLDER = "songs"
 #
 # सबै ठाउँका MP3 खोज्ने हो भने खाली राख्नुहोस्:
-ASSET_FOLDER = "pop"
+ASSET_FOLDER = ""
 
 
 # ============================================================
@@ -44,8 +44,8 @@ ASSET_FOLDER = "pop"
 # खाली राख्दा date filter हुँदैन।
 #
 # एउटै दिनका songs मात्र:
-# FROM_DATE = "2026-09-06"
-# TO_DATE = "2026-09-06"
+FROM_DATE = "2026-11-13"
+TO_DATE = "2026-11-13"
 #
 # Date range:
 # FROM_DATE = "2026-09-01"
@@ -63,12 +63,11 @@ ASSET_FOLDER = "pop"
 # FROM_DATE = ""
 # TO_DATE = ""
 
-FROM_DATE = ""
-TO_DATE = ""
+
 
 
 # Output file
-OUTPUT_FILE = "pop_songs.dart"
+OUTPUT_FILE = "bhajan_songs.dart"
 
 
 # ============================================================
@@ -304,23 +303,16 @@ def get_all_mp3():
     # ========================================================
 
     if FROM_DATE and TO_DATE:
-
-        expression += (
-            f' AND created_at:[{FROM_DATE}T00:00:00Z '
-            f'TO {TO_DATE}T23:59:59Z]'
-        )
+        if FROM_DATE == TO_DATE:
+            expression += f' AND created_at >= {FROM_DATE}'
+        else:
+            expression += f' AND created_at:[{FROM_DATE} TO {TO_DATE}]'
 
     elif FROM_DATE:
-
-        expression += (
-            f' AND created_at:[{FROM_DATE}T00:00:00Z TO *]'
-        )
+        expression += f' AND created_at >= {FROM_DATE}'
 
     elif TO_DATE:
-
-        expression += (
-            f' AND created_at:[* TO {TO_DATE}T23:59:59Z]'
-        )
+        expression += f' AND created_at <= {TO_DATE}'
 
 
     print("Search:")

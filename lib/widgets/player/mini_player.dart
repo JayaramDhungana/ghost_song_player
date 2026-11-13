@@ -33,150 +33,236 @@ class MiniPlayer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final progress = (state.duration.inMilliseconds > 0)
-        ? (state.position.inMilliseconds / state.duration.inMilliseconds).clamp(0.0, 1.0)
-        : 0.0;
+    final durationMs = state.duration.inMilliseconds;
+    final maxDuration = durationMs > 0 ? durationMs : 1;
+    final position = state.position.inMilliseconds
+        .clamp(0, maxDuration)
+        .toDouble();
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(14, 0, 14, 12),
+      padding: const EdgeInsets.fromLTRB(14, 0, 14, 10),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(20),
         child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
           child: Container(
+            padding: const EdgeInsets.fromLTRB(14, 10, 14, 8),
             decoration: BoxDecoration(
-              color: const Color(0xFF161622).withValues(alpha: 0.92),
-              borderRadius: BorderRadius.circular(18),
+              color: const Color(0xFF141320).withValues(alpha: 0.94),
+              borderRadius: BorderRadius.circular(20),
               border: Border.all(
                 color: Colors.white.withValues(alpha: 0.1),
-                width: 1,
+                width: 1.2,
               ),
-              boxShadow: const [
+              boxShadow: [
                 BoxShadow(
-                  blurRadius: 20,
-                  offset: Offset(0, 8),
-                  color: Colors.black54,
+                  blurRadius: 24,
+                  offset: const Offset(0, 8),
+                  color: Colors.black.withValues(alpha: 0.5),
                 ),
               ],
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Top sleek 2.5px progress indicator
-                LinearProgressIndicator(
-                  value: progress,
-                  minHeight: 2.5,
-                  backgroundColor: Colors.white.withValues(alpha: 0.08),
-                  valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFFA855F7)),
-                ),
-                Material(
-                  color: Colors.transparent,
-                  child: InkWell(
-                    onTap: onTap,
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      child: Row(
-                        children: [
-                          // Mini Vinyl Album Art
-                          Container(
-                            width: 42,
-                            height: 42,
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(10),
-                              gradient: const LinearGradient(
-                                colors: [Color(0xFF6366F1), Color(0xFFA855F7)],
-                              ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: const Color(0xFFA855F7).withValues(alpha: 0.35),
-                                  blurRadius: 8,
-                                ),
-                              ],
-                            ),
-                            child: Stack(
-                              alignment: Alignment.center,
-                              children: [
-                                Container(
-                                  width: 26,
-                                  height: 26,
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    border: Border.all(
-                                      color: Colors.white.withValues(alpha: 0.25),
+                // ─────────────────────────────────────────
+                // TOP TIER: Track Info + Playback Controls
+                // ─────────────────────────────────────────
+                Row(
+                  children: [
+                    // Tap on album art / title opens full screen player
+                    Expanded(
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(10),
+                          onTap: onTap,
+                          child: Row(
+                            children: [
+                              // Mini Glowing Album Art
+                              Container(
+                                width: 42,
+                                height: 42,
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(10),
+                                  gradient: const LinearGradient(
+                                    colors: [Color(0xFF6366F1), Color(0xFFA855F7)],
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: const Color(0xFFA855F7).withValues(alpha: 0.35),
+                                      blurRadius: 8,
                                     ),
-                                  ),
+                                  ],
                                 ),
-                                Icon(
-                                  state.isPlaying
-                                      ? Icons.music_note_rounded
-                                      : Icons.pause_rounded,
-                                  color: Colors.white,
-                                  size: 20,
+                                child: Stack(
+                                  alignment: Alignment.center,
+                                  children: [
+                                    Container(
+                                      width: 26,
+                                      height: 26,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        border: Border.all(
+                                          color: Colors.white.withValues(alpha: 0.25),
+                                        ),
+                                      ),
+                                    ),
+                                    Icon(
+                                      state.isPlaying
+                                          ? Icons.music_note_rounded
+                                          : Icons.pause_rounded,
+                                      color: Colors.white,
+                                      size: 20,
+                                    ),
+                                  ],
                                 ),
-                              ],
-                            ),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      song.title,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 13.5,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      song.artist?.isNotEmpty == true
+                                          ? song.artist!
+                                          : 'Unknown Artist',
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        fontSize: 11.5,
+                                        color: Colors.grey.shade400,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
                           ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  song.title,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 13.5,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  song.artist?.isNotEmpty == true
-                                      ? song.artist!
-                                      : 'Unknown Artist',
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    fontSize: 11.5,
-                                    color: Colors.grey.shade400,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          IconButton(
-                            style: IconButton.styleFrom(
-                              backgroundColor: const Color(0xFFA855F7),
-                              foregroundColor: Colors.white,
-                              shape: const CircleBorder(),
-                              padding: const EdgeInsets.all(8),
-                              minimumSize: const Size(36, 36),
-                            ),
-                            icon: Icon(
-                              state.isPlaying
-                                  ? Icons.pause_rounded
-                                  : Icons.play_arrow_rounded,
-                              size: 20,
-                            ),
-                            onPressed: () {
-                              context.read<PlayerBloc>().add(const TogglePlayPause());
-                            },
-                          ),
-                          const SizedBox(width: 2),
-                          IconButton(
-                            icon: const Icon(Icons.skip_next_rounded, size: 24),
-                            color: Colors.white.withValues(alpha: 0.8),
-                            onPressed: () {
-                              context.read<PlayerBloc>().add(const NextSong());
-                            },
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+
+                    // Controls: Previous, Play/Pause, Next
+                    IconButton(
+                      icon: const Icon(Icons.skip_previous_rounded, size: 22),
+                      color: Colors.white.withValues(alpha: 0.85),
+                      padding: const EdgeInsets.all(4),
+                      constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                      tooltip: 'Previous',
+                      onPressed: () {
+                        context.read<PlayerBloc>().add(const PreviousSong());
+                      },
+                    ),
+                    const SizedBox(width: 2),
+                    Container(
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFFA855F7).withValues(alpha: 0.45),
+                            blurRadius: 10,
+                            spreadRadius: 1,
                           ),
                         ],
                       ),
+                      child: IconButton(
+                        style: IconButton.styleFrom(
+                          backgroundColor: const Color(0xFFA855F7),
+                          foregroundColor: Colors.white,
+                          shape: const CircleBorder(),
+                          padding: const EdgeInsets.all(8),
+                          minimumSize: const Size(36, 36),
+                        ),
+                        icon: Icon(
+                          state.isPlaying
+                              ? Icons.pause_rounded
+                              : Icons.play_arrow_rounded,
+                          size: 20,
+                        ),
+                        onPressed: () {
+                          context.read<PlayerBloc>().add(const TogglePlayPause());
+                        },
+                      ),
                     ),
-                  ),
+                    const SizedBox(width: 2),
+                    IconButton(
+                      icon: const Icon(Icons.skip_next_rounded, size: 22),
+                      color: Colors.white.withValues(alpha: 0.85),
+                      padding: const EdgeInsets.all(4),
+                      constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                      tooltip: 'Next',
+                      onPressed: () {
+                        context.read<PlayerBloc>().add(const NextSong());
+                      },
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 6),
+
+                // ─────────────────────────────────────────
+                // BOTTOM TIER: Timestamps + Interactive Seek Slider
+                // ─────────────────────────────────────────
+                Row(
+                  children: [
+                    Text(
+                      _formatDuration(state.position),
+                      style: TextStyle(
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.grey.shade400,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: SliderTheme(
+                        data: SliderTheme.of(context).copyWith(
+                          activeTrackColor: const Color(0xFFA855F7),
+                          inactiveTrackColor: Colors.white.withValues(alpha: 0.12),
+                          trackHeight: 2.5,
+                          thumbColor: Colors.white,
+                          thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 4.5),
+                          overlayShape: const RoundSliderOverlayShape(overlayRadius: 10),
+                        ),
+                        child: Slider(
+                          padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
+                          min: 0,
+                          max: maxDuration.toDouble(),
+                          value: position,
+                          onChanged: state.duration == Duration.zero
+                              ? null
+                              : (value) {
+                                  context.read<PlayerBloc>().add(
+                                    SeekSong(Duration(milliseconds: value.toInt())),
+                                  );
+                                },
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      _formatDuration(state.duration),
+                      style: TextStyle(
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.grey.shade400,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
