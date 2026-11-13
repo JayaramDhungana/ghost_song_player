@@ -10,6 +10,7 @@ import 'package:just_audio_background/just_audio_background.dart';
 import 'blocs/player/player_bloc.dart';
 import 'services/audio_service.dart';
 import 'views/player_view.dart';
+import 'views/splash_view.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -48,7 +49,7 @@ class GhostPlayerApp extends StatelessWidget {
     return BlocProvider(
       create: (_) => PlayerBloc(audioService: audioService),
       child: MaterialApp.router(
-        title: 'Renuka',
+        title: 'JD Media Player',
         debugShowCheckedModeBanner: false,
         theme: ThemeData(brightness: Brightness.dark, useMaterial3: true),
         routerConfig: _router,
@@ -58,8 +59,13 @@ class GhostPlayerApp extends StatelessWidget {
 }
 
 final GoRouter _router = GoRouter(
-  initialLocation: '/player',
+  initialLocation: '/splash',
   routes: [
+    GoRoute(
+      path: '/splash',
+      name: 'splash',
+      builder: (context, state) => const SplashView(),
+    ),
     GoRoute(
       path: '/player',
       name: 'player',

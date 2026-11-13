@@ -8,8 +8,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:ghost_song_player/main.dart';
-import 'package:ghost_song_player/services/audio_service.dart';
+import 'package:jd_media_player/main.dart';
+import 'package:jd_media_player/services/audio_service.dart';
 
 void main() {
   testWidgets('Counter increments smoke test', (WidgetTester tester) async {
